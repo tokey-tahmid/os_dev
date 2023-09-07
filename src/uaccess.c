@@ -1,9 +1,7 @@
 #include <uaccess.h>
 #include <util.h>
-#include <page.h>
-#include <mmu.h>
 
-unsigned long copy_from_user(void *dst, 
+unsigned long copy_from(void *dst, 
                         const struct page_table *from_table, 
                         const void *from, 
                         unsigned long size)
@@ -20,7 +18,7 @@ unsigned long copy_from_user(void *dst,
     return bytes_copied;
 }
 
-unsigned long copy_to_user(void *to, 
+unsigned long copy_to(void *to, 
                       const struct page_table *to_table, 
                       const void *src, 
                       unsigned long size)

@@ -31,7 +31,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <stdarg.h>
+#include "printf.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -956,7 +957,7 @@ static int _vsnprintf(out_fct_type out, char *buffer, const size_t maxlen,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int printk(const char *format, ...)
+int printf(const char *format, ...)
 {
     va_list va;
     va_start(va, format);

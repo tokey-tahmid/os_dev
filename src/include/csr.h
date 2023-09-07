@@ -13,47 +13,30 @@
 #include <config.h>
 
 // CSR_READ(variable, "register"). Must use quotes for the register name.
-#define CSR_READ(var, csr)    __asm__ volatile("csrr %0, " csr : "=r"(var))
+#define CSR_READ(var, csr)    asm volatile("csrr %0, " csr : "=r"(var))
 
 // CSR_WRITE("register", variable). Must use quotes for the register name.
-#define CSR_WRITE(csr, var)   __asm__ volatile("csrw " csr ", %0" ::"r"(var))
+#define CSR_WRITE(csr, var)   asm volatile("csrw " csr ", %0" ::"r"(var))
 
 // CSR_CLEAR("register"). Clears a register to 0. Must use quotes for the register name.
-#define CSR_CLEAR(csr)  __asm__ volatile("csrw " csr ", zero");
-
-#define FENCE() __sync_synchronize()
-#define SYNC() FENCE()
-
-#define IRQ_OFF() \
-    do { \
-        unsigned long ___SST_REG_; \
-        CSR_READ(___SST_REG_, "sstatus"); \
-        CSR_WRITE("sstatus", ___SST_REG_ & ~SSTATUS_SIE); \
-    } while (0)
-
-#define IRQ_ON() \
-    do { \
-        unsigned long ___SST_REG_; \
-        CSR_READ(___SST_REG_, "sstatus"); \
-        CSR_WRITE("sstatus", ___SST_REG_ | SSTATUS_SIE); \
-    } while (0)
+#define CSR_CLEAR(csr)  asm volatile("csrw " csr ", zero");
 
 // SFENCE for the SATP register (for MMU).
 // Flush the entire TLB
-#define SFENCE_ALL()          __asm__ volatile("sfence.vma");
+#define SFENCE_ALL()          asm volatile("sfence.vma");
 // Flush only TLB entries tagged with ASID
-#define SFENCE_ASID(x)        __asm__ volatile("sfence.vma zero, %0" ::"r"(x))
+#define SFENCE_ASID(x)        asm volatile("sfence.vma zero, %0" ::"r"(x))
 // Flush only TLB entries with the given virtual memory address (VMA)
-#define SFENCE_VMA(x)         __asm__ volatile("sfence.vma %0, zero" ::"r"(x))
+#define SFENCE_VMA(x)         asm volatile("sfence.vma %0, zero" ::"r"(x))
 // Flush only TLB entries with the given ASID that match the given VMA
-#define SFENCE(vma, asid)     __asm__ volatile("sfence.vma %0, %1" ::"r"(vma), "r"(asid))
+#define SFENCE(vma, asid)     asm volatile("sfence.vma %0, %1" ::"r"(vma), "r"(asid))
 
 // Return from trap (M = machine, S = supervisor)
-#define MRET()                __asm__ volatile("mret")
-#define SRET()                __asm__ volatile("sret")
+#define MRET()                asm volatile("mret")
+#define SRET()                asm volatile("sret")
 
 // Waiting defines
-#define WFI()                 __asm__ volatile("wfi")
+#define WFI()                 asm volatile("wfi")
 #define WFI_LOOP() \
     do {           \
         WFI();     \
@@ -73,9 +56,6 @@
 // STATUS Previous Interrupt Enable ([MS]PIE)
 #define MSTATUS_MPIE_BIT                   7
 #define MSTATUS_MPIE                       (1UL << MSTATUS_MPIE_BIT)
-
-#define SSTATUS_SIE_BIT                    1
-#define SSTATUS_SIE                        (1UL << SSTATUS_SIE_BIT)
 
 #define SSTATUS_SPIE_BIT                   5
 #define SSTATUS_SPIE                       (1UL << SSTATUS_SPIE_BIT)

@@ -61,13 +61,6 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     }
     return MMU_TRANSLATE_PAGE_FAULT;
 }
-bool mmu_access_ok(const struct page_table *tab, unsigned long vaddr, unsigned long required_perms)
-{
-    (void)tab;
-    (void)vaddr;
-    (void)required_perms;
-    return false;
-}
 
 uint64_t mmu_map_range(struct page_table *tab, 
                        uint64_t start_virt, 

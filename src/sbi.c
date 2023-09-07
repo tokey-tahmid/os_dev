@@ -4,20 +4,20 @@
 
 void sbi_putchar(char c)
 {
-    __asm__ volatile("mv a7, %0\nmv a0, %1\necall" ::"r"(SBI_SVCALL_PUTCHAR), "r"(c) : "a7", "a0");
+    asm volatile("mv a7, %0\nmv a0, %1\necall" ::"r"(SBI_SVCALL_PUTCHAR), "r"(c) : "a7", "a0");
 }
 
 char sbi_getchar(void)
 {
     char c;
-    __asm__ volatile("mv a7, %1\necall\nmv %0, a0\n" : "=r"(c) : "r"(SBI_SVCALL_GETCHAR) : "a7", "a0");
+    asm volatile("mv a7, %1\necall\nmv %0, a0\n" : "=r"(c) : "r"(SBI_SVCALL_GETCHAR) : "a7", "a0");
     return c;
 }
 
 int sbi_hart_get_status(unsigned int hart)
 {
     int stat;
-    __asm__ volatile("mv a7, %1\nmv a0, %2\necall\nmv %0, a0\n"
+    asm volatile("mv a7, %1\nmv a0, %2\necall\nmv %0, a0\n"
                  : "=r"(stat)
                  : "r"(SBI_SVCALL_HART_STATUS), "r"(hart)
                  : "a0", "a7");
@@ -27,7 +27,7 @@ int sbi_hart_get_status(unsigned int hart)
 int sbi_hart_start(unsigned int hart, unsigned long target, unsigned long scratch, unsigned long satp)
 {
     int stat;
-    __asm__ volatile("mv a7, %1\nmv a0, %2\nmv a1, %3\nmv a2, %4\nmv a3, %5\necall\nmv %0, a0\n"
+    asm volatile("mv a7, %1\nmv a0, %2\nmv a1, %3\nmv a2, %4\nmv a3, %5\necall\nmv %0, a0\n"
                  : "=r"(stat)
                  : "r"(SBI_SVCALL_HART_START), "r"(hart), "r"(target), "r"(scratch), "r"(satp)
                  : "a0", "a1", "a2", "a7");
@@ -36,44 +36,44 @@ int sbi_hart_start(unsigned int hart, unsigned long target, unsigned long scratc
 
 void sbi_hart_stop(void)
 {
-    __asm__ volatile("mv a7, %0\necall\nwfi" : : "r"(SBI_SVCALL_HART_STOP) : "a0", "a7");
+    asm volatile("mv a7, %0\necall\nwfi" : : "r"(SBI_SVCALL_HART_STOP) : "a0", "a7");
 }
 
 void sbi_poweroff(void)
 {
-    __asm__ volatile("mv a7, %0\necall" : : "r"(SBI_SVCALL_POWEROFF) : "a0", "a7");
+    asm volatile("mv a7, %0\necall" : : "r"(SBI_SVCALL_POWEROFF) : "a0", "a7");
 }
 
 unsigned long sbi_get_time(void)
 {
     unsigned long ret;
-    __asm__ volatile("mv a7, %1\necall\nmv %0, a0" : "=r"(ret) : "r"(SBI_SVCALL_GET_TIME) : "a0", "a7");
+    asm volatile("mv a7, %1\necall\nmv %0, a0" : "=r"(ret) : "r"(SBI_SVCALL_GET_TIME) : "a0", "a7");
     return ret;
 }
 
 void sbi_set_timer(unsigned int hart, unsigned long val)
 {
-    __asm__ volatile("mv a7, %0\nmv a0, %1\nmv a1, %2\necall" ::"r"(SBI_SVCALL_SET_TIMECMP), "r"(hart),
+    asm volatile("mv a7, %0\nmv a0, %1\nmv a1, %2\necall" ::"r"(SBI_SVCALL_SET_TIMECMP), "r"(hart),
                  "r"(val)
                  : "a0", "a1", "a7");
 }
 
 void sbi_add_timer(unsigned int hart, unsigned long val)
 {
-    __asm__ volatile("mv a7, %0\nmv a0, %1\nmv a1, %2\necall" ::"r"(SBI_SVCALL_ADD_TIMECMP), "r"(hart),
+    asm volatile("mv a7, %0\nmv a0, %1\nmv a1, %2\necall" ::"r"(SBI_SVCALL_ADD_TIMECMP), "r"(hart),
                  "r"(val)
                  : "a0", "a1", "a7");
 }
 
 void sbi_ack_timer(void)
 {
-    __asm__ volatile("mv a7, %0\necall" ::"r"(SBI_SVCALL_ACK_TIMER) : "a7");
+    asm volatile("mv a7, %0\necall" ::"r"(SBI_SVCALL_ACK_TIMER) : "a7");
 }
 
 unsigned long sbi_rtc_get_time(void)
 {
     unsigned long ret;
-    __asm__ volatile("mv a7, %1\necall\nmv %0, a0"
+    asm volatile("mv a7, %1\necall\nmv %0, a0"
                  : "=r"(ret)
                  : "r"(SBI_SVCALL_RTC_GET_TIME)
                  : "a0", "a7");
@@ -83,7 +83,7 @@ unsigned long sbi_rtc_get_time(void)
 int sbi_whoami(void)
 {
     int ret;
-    __asm__ volatile("mv a7, %1\necall\nmv %0, a0" : "=r"(ret) : "r"(SBI_SVCALL_WHOAMI) : "a0", "a7");
+    asm volatile("mv a7, %1\necall\nmv %0, a0" : "=r"(ret) : "r"(SBI_SVCALL_WHOAMI) : "a0", "a7");
     return ret;
 }
 
