@@ -62,12 +62,12 @@ bool mmu_map(struct page_table *tab, uint64_t vaddr, uint64_t paddr, uint8_t lvl
                 return false;
             }
             memset(pt, 0, sizeof(struct page_table));  // Ensure the new table is zeroed out
-            pt->entries[vpn[i]] = (unsigned long) pt >> 2 | PB_VALID;
+            tab->entries[vpn[i]] = (unsigned long) pt | PB_VALID;
             debugf("mmu_map: create a new page table at 0x%08lx\n", pt);
             debugf("mmu_map: set entry %d as lvl %d branch in new page table", vpn[i], i);
         }
         
-        pt = (struct page_table *)((pt->entries[vpn[i]] & 0x3FF) << 2);
+        pt = (struct page_table *)(pt->entries[vpn[i]] & ~0xFFF);
         debugf("mmu_map: lvl %d page table is at 0x%08lx\n", i - 1, pt);
     }
 
