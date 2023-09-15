@@ -35,6 +35,11 @@ static inline bool is_leaf(unsigned long pte)
 bool mmu_map(struct page_table *tab, uint64_t vaddr, uint64_t paddr, uint8_t lvl, uint64_t bits)
 {
     if (tab == NULL || lvl > MMU_LEVEL_1G || (bits & 0xE) == 0) {
+        debugf("mmu_map: Invalid parameters received. tab: 0x%08lx, lvl: %d, bits: 0x%08lx", tab, lvl, bits);
+        return false;
+    }
+    if (vaddr & (PAGE_SIZE - 1) || paddr & (PAGE_SIZE - 1)) {
+        debugf("mmu_map: Misaligned addresses received. vaddr: 0x%08lx, paddr: 0x%08lx", vaddr, paddr);
         return false;
     }
 
@@ -56,6 +61,7 @@ bool mmu_map(struct page_table *tab, uint64_t vaddr, uint64_t paddr, uint8_t lvl
                 debugf("mmu_map: mmu_table_create returned null");
                 return false;
             }
+            memset(pt, 0, sizeof(struct page_table));  // Ensure the new table is zeroed out
             pt->entries[vpn[i]] = (unsigned long) pt >> 2 | PB_VALID;
             debugf("mmu_map: create a new page table at 0x%08lx\n", pt);
             debugf("mmu_map: set entry %d as lvl %d branch in new page table", vpn[i], i);
