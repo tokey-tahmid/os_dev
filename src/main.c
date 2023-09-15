@@ -72,14 +72,26 @@ void main(unsigned int hart)
 
     struct page_table *pt    = mmu_table_create();
     kernel_mmu_table = pt;
+    if (!pt) {
+        logf(LOG_ERROR, "Failed to create a new page table.");
+        return;
+    }
+
     // Map memory segments for our kernel
+    logf(LOG_DEBUG, "Mapping kernel range: 0x%08lx to 0x%08lx", sym_start(text), sym_end(heap));
+
     mmu_map_range(pt, sym_start(text), sym_end(heap), sym_start(text), MMU_LEVEL_1G,
                   PB_READ | PB_WRITE | PB_EXECUTE);
     // PLIC
+    logf(LOG_DEBUG, "Mapping PLIC range: 0x0C000000 to 0x0C2FFFFF");
+
     mmu_map_range(pt, 0x0C000000, 0x0C2FFFFF, 0x0C000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
     // PCIe ECAM
+    logf(LOG_DEBUG, "Mapping PCIe ECAM range: 0x30000000 to 0x30FFFFFF");
+
     mmu_map_range(pt, 0x30000000, 0x30FFFFFF, 0x30000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
     // PCIe MMIO
+    logf(LOG_DEBUG, "Mapping PCIe MMIO range: 0x40000000 to 0x4FFFFFFF");
     mmu_map_range(pt, 0x40000000, 0x4FFFFFFF, 0x40000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
 
 #ifdef USE_MMU
