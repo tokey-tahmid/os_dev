@@ -54,8 +54,7 @@ static int is_last(uint64_t index)
 void page_init(void)
 {
     /* Initialize the page system. */
-    bookkeeping = (uint8_t *)sym_start(heap);
-
+    bookkeeping = sym_start(heap);
     
     // Print bookkeeping area
     mutex_spinlock(&page_lock);
@@ -172,13 +171,13 @@ void *page_nalloc(int n)
 
 void *page_znalloc(int n)
 {
+    return NULL;
     void *mem = page_nalloc(n);
     if (mem) {
         memset(mem, 0, n * PAGE_SIZE);
     }
     return mem;
 }
-
 
 void page_free(void *p)
 {
