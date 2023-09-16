@@ -12,13 +12,19 @@
 
 // When you create files and make it work, uncomment the following.
 
-#define DEFAULT_LOG_LEVEL 3
-
 #define RUN_INTERNAL_CONSOLE
-//#define USE_MMU
-// #define USE_HEAP
-// #define USE_PCI
-// #define USE_VIRTIO
+// #define RUN_OTHER_HARTS
+#define USE_PAGE_ALLOC
+#ifdef USE_PAGE_ALLOC
+    // We can't use the MMU or heap without the page allocator
+    #define USE_MMU
+    //#define USE_HEAP
+#endif
+#ifdef USE_HEAP
+    // We cannot initialize devices without the heap
+    #define USE_PCI
+    #define USE_VIRTIO
+#endif
 
 
 // The maximum number of HARTS we can support. The more HARTs,
@@ -27,11 +33,15 @@
 // strides. Setting this number wrong might crash the SBI.
 #define MAX_ALLOWABLE_HARTS       4
 
+#define KERNEL_HEAP_PAGES       4096 * 4
+
+#define MAX_EVENTS              1024
+
 // The MTIME register increments 10MHz
 #define VIRT_TIMER_FREQ           10000000
 
 // Switches per second
-#define CONTEXT_SWITCHES_PER_SEC  200
+#define CONTEXT_SWITCHES_PER_SEC  15
 
 #define CONTEXT_SWITCH_TIMER      (VIRT_TIMER_FREQ / CONTEXT_SWITCHES_PER_SEC)
 

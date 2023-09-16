@@ -8,18 +8,13 @@
  * @copyright Copyright (c) 2022
  *
  */
-#include <config.h>
+#include <csr.h>
 #include <lock.h>
-#include <compiler.h>
+#include <stdint.h>
 
 bool mutex_trylock(Mutex *mutex)
 {
-    int old;
-    asm volatile("amoswap.w.aq %0, %1, (%2)" : "=r"(old) : "r"(MUTEX_LOCKED), "r"(mutex));
-    // If old == MUTEX_LOCKED, that means the mutex was already
-    // locked when we tried to lock it. That means we didn't acquire
-    // it.
-    return old != MUTEX_LOCKED;
+    return MUTEX_LOCKED != __sync_lock_test_and_set(mutex, MUTEX_LOCKED);
 }
 
 void mutex_spinlock(Mutex *mutex)
@@ -30,5 +25,23 @@ void mutex_spinlock(Mutex *mutex)
 
 void mutex_unlock(Mutex *mutex)
 {
-    asm volatile("amoswap.w.rl zero, zero, (%0)" : : "r"(mutex));
+    __sync_lock_release(mutex);
+}
+
+void mutex_spinlock_irq_save(Mutex *mutex, int *state)
+{
+    uint64_t irq;
+    CSR_READ(irq, "sstatus");
+    *state = !!(irq & SSTATUS_SIE);
+    IRQ_OFF();
+    while (!mutex_trylock(mutex))
+        ;
+}
+
+void mutex_unlock_irq_restore(Mutex *mutex, int state)
+{
+    uint64_t irq;
+    mutex_unlock(mutex);
+    CSR_READ(irq, "sstatus");
+    CSR_WRITE("sstatus", irq | ((!!state) << SSTATUS_SIE_BIT));
 }

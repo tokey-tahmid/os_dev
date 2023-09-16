@@ -6,7 +6,7 @@ OBJCOPY=$(CROSS_COMPILE)objcopy
 OBJDUMP=$(CROSS_COMPILE)objdump
 
 LDSCRIPT=lds/riscv.lds
-CFLAGS=-g -O0 -Wall -Wextra -march=rv64gc -mabi=lp64d -ffreestanding -nostdlib -nostartfiles -Iutil/include -Isrc/include -mcmodel=medany
+CFLAGS=-g -O0 -Wall -Wextra -pedantic -std=c2x -march=rv64gc -mabi=lp64d -ffreestanding -nostdlib -nostartfiles -Iutil/include -Isrc/include -mcmodel=medany
 LDFLAGS=-T$(LDSCRIPT) $(CFLAGS) -Lutil/
 LIBS=-lcosc562_util
 ASM_DIR=asm
@@ -24,9 +24,9 @@ SYMS=cosc562.sym cosc562.dbg
 #### QEMU STUFF
 QEMU?=qemu-system-riscv64
 QEMU_DEBUG_PIPE=debug.pipe
-QEMU_HARD_DRIVE_1=hdd1.dsk
-QEMU_HARD_DRIVE_2=hdd2.dsk
-QEMU_HARD_DRIVE_3=hdd3.dsk
+QEMU_HARD_DRIVE_1=hdd0.dsk
+QEMU_HARD_DRIVE_2=hdd1.dsk
+QEMU_HARD_DRIVE_3=hdd2.dsk
 QEMU_BIOS=./sbi/sbi.elf
 QEMU_DEBUG=guest_errors,unimp -gdb unix:$(QEMU_DEBUG_PIPE),server,nowait
 QEMU_MACH=virt #,aia=aplic #,dumpdtb=dtb.dtb
@@ -46,8 +46,8 @@ QEMU_DEVICES+= -device virtio-tablet-pci,bus=pcie.0,id=tablet
 QEMU_DEVICES+= -device virtio-rng-pci-non-transitional,bus=bridge1,id=rng
 QEMU_DEVICES+= -device virtio-gpu-pci,bus=bridge2,id=gpu
 # Block device
-#QEMU_DEVICES+= -device virtio-blk-pci-non-transitional,drive=hdd1,bus=bridge3,id=blk1
-#QEMU_DEVICES+= -drive if=none,format=raw,file=$(QEMU_HARD_DRIVE_1),id=hdd1
+QEMU_DEVICES+= -device virtio-blk-pci-non-transitional,drive=hdd1,bus=bridge3,id=blk1
+QEMU_DEVICES+= -drive if=none,format=raw,file=$(QEMU_HARD_DRIVE_1),id=hdd1
 # Network device (do not uncomment unless necessary)
 #QEMU_DEVICES+= -device virtio-net-pci-non-transitional,netdev=net1,bus=bridge4,id=net
 #QEMU_DEVICES+= -netdev user,id=net1,hostfwd=tcp::35555-:22
@@ -57,16 +57,15 @@ all: $(KERNEL) $(SYMS)
 
 include $(wildcard $(DEP_DIR)/*.d)
 
-rungui: $(KERNEL) sbi
-	echo "Running WITH GUI. Use target run to run WITHOUT GUI."
+rungui: $(KERNEL) $(SYMS) sbi
+	@echo "Running WITH GUI. Use target run to run WITHOUT GUI."
 	$(QEMU) -bios $(QEMU_BIOS) -d $(QEMU_DEBUG) -cpu $(QEMU_CPU) -machine $(QEMU_MACH) -smp $(QEMU_CPUS) -m $(QEMU_MEM) -kernel $(QEMU_KERNEL) $(QEMU_OPTIONS) $(QEMU_DEVICES)
 
-run: $(KERNEL) sbi
-	echo "Running WITHOUT GUI. Use target rungui to run WITH GUI."
+run: $(KERNEL) $(SYMS) sbi
+	@echo "Running WITHOUT GUI. Use target rungui to run WITH GUI."
 	$(QEMU) -nographic -bios $(QEMU_BIOS) -d $(QEMU_DEBUG) -cpu $(QEMU_CPU) -machine $(QEMU_MACH) -smp $(QEMU_CPUS) -m $(QEMU_MEM) -kernel $(QEMU_KERNEL) $(QEMU_OPTIONS) $(QEMU_DEVICES)
 
-$(KERNEL): $(OBJECTS) $(LDSCRIPT)
-	$(MAKE) -C util
+$(KERNEL): user util $(OBJECTS) $(LDSCRIPT)
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.c Makefile
@@ -83,10 +82,10 @@ cosc562.sym: $(KERNEL)
 
 .PHONY: clean gdb run gdbrun user util sbi
 
-gdbrun: $(KERNEL) sbi
+gdbrun: $(KERNEL) $(SYMS) sbi
 	$(QEMU) -S -bios $(QEMU_BIOS) -d $(QEMU_DEBUG) -cpu $(QEMU_CPU) -machine $(QEMU_MACH) -smp $(QEMU_CPUS) -m $(QEMU_MEM) -kernel $(QEMU_KERNEL) $(QEMU_OPTIONS) $(QEMU_DEVICES)
 
-gdb: $(KERNEL) sbi
+gdb: $(KERNEL) $(SYMS) sbi
 	$(GDB) $< -ex "target extended-remote $(QEMU_DEBUG_PIPE)" -ex "add-symbol-file $(QEMU_BIOS)" 
 
 user:

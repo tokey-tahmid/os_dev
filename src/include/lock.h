@@ -41,3 +41,24 @@ void mutex_spinlock(Mutex *mutex);
  */
 void mutex_unlock(Mutex *mutex);
 
+/**
+ * @brief Lock a mutex but first, copies the IRQ state
+ * and then turns off IRQs before trying to acquire the lock.
+ * This can cause deadlocks if an IRQ is necessary to unlock.
+ * 
+ * @param mutex a pointer to the mutex to lock.
+ * @param state an integer to store the state of the IRQ.
+ * 
+*/
+void mutex_spinlock_irq_save(Mutex *mutex, int *state);
+
+/**
+ * @brief Unlock a mutex and then restore the IRQ state to
+ * whatever is given.
+ * 
+ * @param mutex a pointer to the mutex to lock.
+ * @param state an integer to store the state of the IRQ.
+ * 
+*/
+void mutex_unlock_irq_restore(Mutex *mutex, int state);
+

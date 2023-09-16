@@ -1,7 +1,7 @@
 /**
- * @file symbols.h
+ * @file uaccess.h
  * @author Stephen Marz (sgm@utk.edu)
- * @brief Utilities to read linker script exports.
+ * @brief User access routines.
  * @version 0.1
  * @date 2022-05-19
  * 
@@ -11,12 +11,12 @@
 #pragma once
 
 struct page_table;
-unsigned long copy_from(void *dst, 
+unsigned long copy_from_user(void *dst, 
                         const struct page_table *from_table, 
                         const void *from, 
                         unsigned long size);
 
-unsigned long copy_to(void *to, 
+unsigned long copy_to_user(void *to, 
                       const struct page_table *to_table, 
                       const void *src, 
                       unsigned long size);

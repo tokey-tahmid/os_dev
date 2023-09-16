@@ -4,9 +4,9 @@
  * @brief Memory Management Unit
  * @version 0.1
  * @date 2022-05-19
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 #pragma once
 #include <stdbool.h>
@@ -41,33 +41,29 @@
 #define SATP_SET_ASID(x)    ((((unsigned long)(x)) & 0xFFFF) << SATP_ASID_BIT)
 
 // The kernel's address space identifier is 0b1111_1111_1111_1111
-#define KERNEL_ASID 0xFFFFUL
+#define KERNEL_ASID         0xFFFFUL
 
 // Helpers to quickly make an SATP register value
-#define SATP(table, asid) (SATP_MODE_SV39 | SATP_SET_PPN(table) | SATP_SET_ASID(asid))
-#define SATP_KERNEL       SATP(kernel_mmu_table, KERNEL_ASID)
+#define SATP(table, asid)   (SATP_MODE_SV39 | SATP_SET_PPN(table) | SATP_SET_ASID(asid))
+#define SATP_KERNEL         SATP(kernel_mmu_table, KERNEL_ASID)
 
 struct page_table {
     unsigned long entries[PAGE_SIZE_4K / sizeof(unsigned long)];
 };
 
-#define MMU_TRANSLATE_PAGE_FAULT  (-1UL)
+#define MMU_TRANSLATE_PAGE_FAULT (-1UL)
 
 // Declared in src/main.c
 extern struct page_table *kernel_mmu_table;
 
 struct page_table *mmu_table_create(void);
-unsigned long mmu_map_range(struct page_table *tab, 
-                       unsigned long start_virt, 
-                       unsigned long end_virt, 
-                       unsigned long start_phys,
-                       unsigned char lvl, 
-                       unsigned long bits);
-unsigned long mmu_translate(const struct page_table *tab, 
-                            unsigned long vaddr);
-bool mmu_map(struct page_table *tab, 
-             unsigned long vaddr, 
-             unsigned long paddr, 
-             unsigned char lvl, 
+unsigned long mmu_map_range(struct page_table *tab, unsigned long start_virt,
+                            unsigned long end_virt, unsigned long start_phys, unsigned char lvl,
+                            unsigned long bits);
+unsigned long mmu_translate(const struct page_table *tab, unsigned long vaddr);
+bool mmu_access_ok(const struct page_table *tab, unsigned long vaddr, unsigned long required_perms);
+bool mmu_map(struct page_table *tab, unsigned long vaddr, unsigned long paddr, unsigned char lvl,
              unsigned long bits);
 void mmu_free(struct page_table *tab);
+
+#define mmu_translate_ptr(tab, vaddr) mmu_translate(tab, (unsigned long)(vaddr))

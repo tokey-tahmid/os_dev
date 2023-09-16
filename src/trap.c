@@ -1,7 +1,7 @@
 #include <config.h>
 #include <csr.h>
 #include <plic.h>
-#include <debug.h>
+#include <log.h>
 #include <sbi.h>
 #include <sched.h>
 #include <syscall.h>
@@ -50,11 +50,10 @@ void c_trap_handler(void)
                 syscall_handle(hart, epc, scratch);
                 break;
             default:
-                debugf(
+                panicf(
                     "Unhandled Synchronous interrupt %ld @ 0x%08lx [0x%08lx]. "
                     "Hanging hart %d\n",
                     cause, epc, tval, hart);
-                WFI_LOOP();
                 break;
         }
     }
