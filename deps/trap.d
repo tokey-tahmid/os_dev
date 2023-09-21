@@ -2,9 +2,7 @@ objs/trap.o: src/trap.c src/include/config.h src/include/csr.h \
  src/include/plic.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stdint.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stdint-gcc.h \
- src/include/log.h \
- /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stdbool.h \
- src/include/sbi.h util/include/compiler.h \
+ src/include/debug.h src/include/sbi.h util/include/compiler.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/sched.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/features.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/stdc-predef.h \
@@ -20,10 +18,6 @@ objs/trap.o: src/trap.c src/include/config.h src/include/csr.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stddef.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/types/time_t.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/types/struct_timespec.h \
- /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/time.h \
- /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/time.h \
- /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/types/clock_t.h \
- /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/types/struct_tm.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/sched.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/types/struct_sched_param.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/cpu-set.h \

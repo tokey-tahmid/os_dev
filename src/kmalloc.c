@@ -3,15 +3,15 @@
 #include <util.h>
 #include <mmu.h>
 #include <page.h>
-#include <log.h>
-#include <config.h>
+#include <debug.h>
 
 // The heap virtual address will NOT map 1-to-1 with physical addresses.
 #define KERNEL_HEAP_START_VADDR 0x1c0ffee000UL
+#define KERNEL_HEAP_PAGES       4096
 #define KERNEL_HEAP_END_VADDR   (KERNEL_HEAP_START_VADDR + (KERNEL_HEAP_PAGES * 4096))
 
-// #define DEBUG_KMALLOC
-// #define DEBUG_HEAP
+#define DEBUG_KMALLOC
+#define DEBUG_HEAP
 
 typedef struct Block {
     void *addr;
@@ -247,7 +247,7 @@ static bool heap_check()
 
 void heap_print_stats(void)
 {
-    textf(
+    debugf(
         "HEAP\n~~~~\nFree blocks:    %lu\nUsed blocks:    %lu\nFresh blocks:   %lu\nHeap "
         "check:     %s\n",
         heap_num_free(), heap_num_used(), heap_num_fresh(), heap_check() ? "good" : "bad");
@@ -255,7 +255,7 @@ void heap_print_stats(void)
 void *kmalloc(size_t sz)
 {
 #ifdef DEBUG_KMALLOC
-    debugf("%lu/%lu/%lu %d\n", heap_num_free(), heap_num_used(), heap_num_fresh(),
+    debugf("[kmalloc]: %lu/%lu/%lu %d\n", heap_num_free(), heap_num_used(), heap_num_fresh(),
            heap_check());
 #endif
     return alloc(sz);
@@ -263,7 +263,7 @@ void *kmalloc(size_t sz)
 void *kcalloc(size_t n, size_t sz)
 {
 #ifdef DEBUG_KMALLOC
-    debugf("%lu/%lu/%lu %d\n", heap_num_free(), heap_num_used(), heap_num_fresh(),
+    debugf("[kcalloc]: %lu/%lu/%lu %d\n", heap_num_free(), heap_num_used(), heap_num_fresh(),
            heap_check());
 #endif
     return calloc(n, sz);
@@ -274,7 +274,7 @@ void kfree(void *m)
         free(m);
     }
 #ifdef DEBUG_KMALLOC
-    debugf("%lu/%lu/%lu %d\n", heap_num_free(), heap_num_used(), heap_num_fresh(),
+    debugf("[kfree]: %lu/%lu/%lu %d\n", heap_num_free(), heap_num_used(), heap_num_fresh(),
            heap_check());
 #endif
 }
@@ -282,13 +282,13 @@ void kfree(void *m)
 void heap_init(void)
 {
 #ifdef DEBUG_HEAP
-    debugf("Prior to kernel alloc: Taken: %d, Free: %d\n", page_count_taken(),
+    debugf("[heap_init]: Prior to kernel alloc: Taken: %d, Free: %d\n", page_count_taken(),
            page_count_free());
 #endif
     void *start = page_znalloc(KERNEL_HEAP_PAGES);
 #ifdef DEBUG_HEAP
-    debugf("Heap start at 0x%08lx\n", start);
-    debugf("After to kernel alloc: Taken: %d, Free: %d\n", page_count_taken(),
+    debugf("[heap_init]: Heap start at 0x%08lx\n", start);
+    debugf("[heap_init]: After to kernel alloc: Taken: %d, Free: %d\n", page_count_taken(),
            page_count_free());
 #endif
 

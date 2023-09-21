@@ -26,7 +26,7 @@
 
 #define VIRTIO_CAP_VENDOR         9
 
-struct virtio_capability {
+typedef struct VirtioCapability {
     uint8_t id;
     uint8_t next;
     uint8_t len;
@@ -35,13 +35,13 @@ struct virtio_capability {
     uint8_t pad[3];
     uint32_t offset;
     uint32_t length;
-};
+} VirtioCapability;
 
-#define VIRTIO_CAP(x)             ((struct virtio_capability *)(x))
+#define VIRTIO_CAP(x)             ((VirtioCapability *)(x))
 
 // Type 1 configuration
 #define VIRTIO_PCI_CAP_COMMON_CFG 1
-struct virtio_pci_common_cfg {
+typedef struct VirtioPciCommonCfg {
     uint32_t device_feature_select; /* read-write */
     uint32_t device_feature;        /* read-only for driver */
     uint32_t driver_feature_select; /* read-write */
@@ -59,20 +59,20 @@ struct virtio_pci_common_cfg {
     uint64_t queue_desc;        /* read-write */
     uint64_t queue_driver;      /* read-write */
     uint64_t queue_device;      /* read-write */
-};
+} VirtioPciCommonCfg;
 
 // Type 2 configuration
 #define VIRTIO_PCI_CAP_NOTIFY_CFG 2
-struct virtio_pci_notify_cap {
-    struct virtio_capability cap;
+typedef struct VirtioPciNotifyCap {
+    VirtioCapability cap;
     uint32_t notify_off_multiplier; /* Multiplier for queue_notify_off. */
-};
+} VirtioPciNotifyCap;
 #define BAR_NOTIFY_CAP(offset, queue_notify_off, notify_off_multiplier) \
     ((offset) + (queue_notify_off) * (notify_off_multiplier))
 
 // Type 3 configuration
 #define VIRTIO_PCI_CAP_ISR_CFG 3
-struct virtio_pci_isr {
+typedef struct VirtioPciIsrCap {
     union {
         struct {
             unsigned queue_interrupt : 1;
@@ -81,12 +81,12 @@ struct virtio_pci_isr {
         };
         unsigned int isr_cap;
     };
-};
+} VirtioPciIsrCap;
 
 #define VIRTIO_PCI_CAP_DEVICE_CFG 4
 #define VIRTIO_PCI_CAP_PCI_CFG    5
 
-struct virtio_descriptor {
+typedef struct VirtioDescriptor {
     uint64_t    addr;
     uint32_t    len;
 #define VIRTQ_DESC_F_NEXT 1
@@ -94,40 +94,40 @@ struct virtio_descriptor {
 #define VIRTQ_DESC_F_INDIRECT 4
     uint16_t    flags;
     uint16_t    next;
-};
+} VirtioDescriptor;
 
-struct virtio_driver_ring {
+typedef struct VirtioDriverRing {
 #define VIRTQ_DRIVER_F_NO_INTERRUPT 1
     uint16_t    flags;
     uint16_t    idx;
     uint16_t    ring[];
     // uint16_t     used_event;
-};
+} VirtioDriverRing;
 
-struct virtio_device_ring_elem {
+typedef struct VirtioDeviceRingElem {
     uint32_t    id;
     uint32_t    len;
-};
+} VirtioDeviceRingElem;
 
-struct virtio_device_ring {
+typedef struct VirtioDeviceRing {
 #define VIRTQ_DEVICE_F_NO_NOTIFY 1
     uint16_t    flags;
     uint16_t    idx;
-    struct virtio_device_ring_elem ring[];
+    VirtioDeviceRingElem ring[];
     // uint16_t     avail_event;
-};
+} VirtioDeviceRing;
 
-struct pci_device;
+struct PciDevice;
 struct List;
-struct virtio_device {
-    struct pci_device *pcidev;
-    volatile struct virtio_pci_common_cfg *common_cfg;
-    volatile struct virtio_pci_isr *isr;
-    volatile void *device_cfg;
+typedef struct VirtioDevice {
+    struct PciDevice *pcidev;
+    volatile VirtioPciCommonCfg *common_cfg;
+    volatile char *notify;
+    volatile VirtioPciIsrCap *isr;
 
-    volatile struct virtio_descriptor *desc;
-    volatile struct virtio_driver_ring *driver;
-    volatile struct virtio_device_ring *device;
+    volatile VirtioDescriptor *desc;
+    volatile VirtioDriverRing *driver;
+    volatile VirtioDeviceRing *device;
 
     void *priv;
     struct List *jobs;
@@ -136,11 +136,9 @@ struct virtio_device {
     uint16_t driver_idx;
     uint16_t device_idx;
 
-    volatile char *notify;
-    uint32_t notifymult;
-    
+    uint16_t notifymult;
     bool     ready;
-};
+} VirtioDevice;
 
 #define VIRTIO_F_RESET         0
 #define VIRTIO_F_ACKNOWLEDGE  (1 << 0)
@@ -157,5 +155,4 @@ struct virtio_device {
 #define VIRTIO_DEVICE_TABLE_BYTES(qsize)       (6 + 8 * (qsize))
 
 void virtio_init(void);
-void virtio_add_pci_dev(struct pci_device *dev);
-void virtio_notify(struct virtio_device *viodev, uint16_t which_queue);
+void virtio_notify(VirtioDevice *viodev, uint16_t which_queue);

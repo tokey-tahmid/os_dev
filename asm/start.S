@@ -38,16 +38,16 @@ _start:
     # are what we say they are instead of just assuming from the SBI.
 	la		t0, main
 	csrw	sepc, t0
-	csrw	sie, zero
-	csrw	stvec, zero
+	li		t0, 1 << 9
+	csrw	sie, t0
     # 1 << 13 - FS:  in the "initial" position
     # 1 << 8  - SPP: into Supervisor Mode
     # 1 << 5  - SPIE: enable interrupts
 	li		t0, (1 << 13) | (1 << 8) | (1 << 5)
 	csrw	sstatus, t0
-    # Load the return address (RA) to the HART stop. When main
-    # returns, it will park the HART via the SBI.
-	la		ra, sbi_hart_stop
+    # Load the return address (RA) to the park. When main
+    # returns, it will park the HART.
+	la		ra, park
 	csrr	a0, sscratch
 	sret
 .type _start, function

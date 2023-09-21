@@ -69,9 +69,9 @@ void plic_handle_irq(int hart)
 
     switch (irq) {
         // PCI devices 32-35
-        case PLIC_PCI_INTA:
-        case PLIC_PCI_INTB:
-        case PLIC_PCI_INTC:
+        case PLIC_PCI_INTA: [[fallthrough]]
+        case PLIC_PCI_INTB: [[fallthrough]]
+        case PLIC_PCI_INTC: [[fallthrough]]
         case PLIC_PCI_INTD:
 #ifdef USE_PCI
             pci_dispatch_irq(irq);
