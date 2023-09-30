@@ -1,281 +1,68 @@
-Instructions
+**#NetID : ttahmid**
+**#NetID : amcdan23**
+**#NetID : gmorale1**
+**#NetID : jpark78**
 
-Introduction
-Create two files: pci.h and pci.c. These will eventually link into virtio.h and virtio.c, but for this lab, we will only be enumerating the PCI bus, configuring bridges, configuring devices, and setting BARs for future access.
 
-ECAM Structure
-struct pci_ecam {
-    uint16_t vendor_id;
-    uint16_t device_id;
-    uint16_t command_reg;
-    uint16_t status_reg;
-    uint8_t revision_id;
-    uint8_t prog_if;
-    union {
-        uint16_t class_code;
-        struct {
-            uint8_t class_subcode;
-            uint8_t class_basecode;
-        };
-    };
-    uint8_t cacheline_size;
-    uint8_t latency_timer;
-    uint8_t header_type;
-    uint8_t bist;
-    union {
-        struct {
-            uint32_t bar[6];
-            uint32_t cardbus_cis_pointer;
-            uint16_t sub_vendor_id;
-            uint16_t sub_device_id;
-            uint32_t expansion_rom_addr;
-            uint8_t capes_pointer;
-            uint8_t reserved0[3];
-            uint32_t reserved1;
-            uint8_t interrupt_line;
-            uint8_t interrupt_pin;
-            uint8_t min_gnt;
-            uint8_t max_lat;
-        } type0;
-        struct {
-            uint32_t bar[2];
-            uint8_t primary_bus_no;
-            uint8_t secondary_bus_no;
-            uint8_t subordinate_bus_no;
-            uint8_t secondary_latency_timer;
-            uint8_t io_base;
-            uint8_t io_limit;
-            uint16_t secondary_status;
-            uint16_t memory_base;
-            uint16_t memory_limit;
-            uint16_t prefetch_memory_base;
-            uint16_t prefetch_memory_limit;
-            uint32_t prefetch_base_upper;
-            uint32_t prefetch_limit_upper;
-            uint16_t io_base_upper;
-            uint16_t io_limit_upper;
-            uint8_t capes_pointer;
-            uint8_t reserved0[3];
-            uint32_t expansion_rom_addr;
-            uint8_t interrupt_line;
-            uint8_t interrupt_pin;
-            uint16_t bridge_control;
-        } type1;
-        struct {
-            uint32_t reserved0[9];
-            uint8_t capes_pointer;
-            uint8_t reserved1[3];
-            uint32_t reserved2;
-            uint8_t interrupt_line;
-            uint8_t interrupt_pin;
-            uint8_t reserved3[2];
-        } common;
-    };
-};
+# 4's Journal
 
-struct pci_cape {
-    uint8_t id;
-    uint8_t next;
-};
-The structures above come from the PCI manual.
-There are a lot of fields in the ECAM, but some are only relevant to a type 0 (device) or type 1 (bridge).
+Every week, you will need to write entries in this journal. Include brief information about:
 
-You will not see the devices behind a bridge until the bridge is configured to forward MMIO requests at that point.
-PCI Initialization
-Create and export a function prototyped below.
+* any complications you've encountered.
+* any interesting information you've learned.
+* any complications that you've fixed and how you did it.
 
-void pci_init();
-This function will be called from main.c when you uncomment USE_PCI in config.h.
+Sort your entries in descending order (newest entries at the top).
 
-Enumerating the PCI Bus
-The first thing you need to do is enumerate the PCI bus. Recall that the ECAM starts at the MMIO address 0x3000_0000. From here, the address encodes the bus/slot/device numbers as follows.
+# 30-September-2023
+- `amcdan23`: Added `PCIDevice` infrastructure for setting up VirtIO. Created functions for quickly getting and setting vital info about each PCI device and VirtIO config info from the device. Added functions for memoizing all the `PCIDevice`s for lookups. Added this structure to the `VirtioDevice` structure. Changed PCI functions to use these methods for enumerating devices and printing capabilities.
 
-0011 [00000111]  [01101] [  011  ]  [   0000   ]  [0000 00] 00
-     [ Bus #  ]  [Dev #] [Func # ]  [Ext Reg # ]  [ Reg # ]
-BITS:  27:20      19:15    14:12        11:8         7:2
-The bits above have the following meanings.
+# 29-September-2023
+- `amcdan23`: Added some changes suggested by Dr. Marz. Use vectors to store address to configuration structures for each of the devices connected to PCI (one vector that contains all the devices, another 4 for each of the shared IRQ numbers). Added ISR checking to `pci_irq_dispatch`. Now when `pci_irq_dispatch` is called, it only looks through the smaller shared vector , and now it checks the ISR register's `queue_interrupt` and `device_cfg_interrupt` for each device. -- Also added some copy-pasted comments from lab into the `virtio.h` include file for future reference.
 
-Memory Address (A)	Size (bits)	Meaning
-A[(20 + n - 1):20]
+# 24-September-2023
+- `jpark78`: Fixed a bug with 64b BAR allocation and removed unneeded looping of the function bits in `pci_enumerate_bus`.
 
-1 to 8
+- `amcdan23`: Added setting up type1 config for pci_init_bridge, also added a function for getting the PCI ecam for a given bus and device, also added to `pci_dispatch_irq`. Merged PCI into master.
 
-Bus number
+- `ttahmid`: `pci-ttahmid` branch - After the last issue was resolved, we were having problem with the BARs for devices being `0xffffffffffffffff`. The issue was, after querying the BAR size by writing 0xFFFFFFFF, we were immediately writing the allocated address to the BAR which resulted in incorrect BAR configurations. Solved the issue by placing a `MEMORY_BARRIER` after writing 0xFFFFFFFF to the BAR and before reading it back, which ensured that the write operation fully completed (and the device had a chance to update the BAR) before the subsequent read operation.
 
-A[19:15]
+## 22-September-2023
+- `amcdan23`: Fixed the aforementioned `FATAL` debug_page_table error and got the ECAM memory allocated.
+- `gmorale1`: I've put in the loop and logic for the first steps of enumerating devices. As of writing, when I run `info pci` in the emulator I see 4 bridges and 2 devices, the tablet and keyboard. However, all of the subordinate bus numbers show as zero to qemu. Yet when I use debugf on the structure from the loop, it returns the number I wrote into it. Also, the loop thinks everything (when the header is not 0xFFFF) is a bus. 
 
-5
+## 21-September-2023
+- `ttahmid`: Implemented PCI BUS Enumerating in the `pci-ttahmid` branch. Right now it hangs when trying to read the memory at the `ECAM_ADDR_START` which is set to `0x30000000`. Might need to check if MMU maps that address correctly or not. But right now stuck here.
+- `ttahmid`: Figured out the previous problem with `ECAM_ADDR_START`: the `mmu_map_range` for PCIe ECAM in `main.c` was commented out. Now after uncommenting this line, that address (`0x30000000`) is being used but running into another problem: `[DEBUG]: debug_page_table: expected 0x30000000, got 0xffffffffffffffff` 
+`[FATAL]: debug_page_table: entry 0x180 in page table at 0x80028000 is invalid`
+Implemented `pci_enumerate_bus`, `pci_configure_bridge`, `pci_configure_device` in `pci-ttahmid` branch. Need to solve the page_table issue now.
 
-Device number
+## 17-September-2023
+- `amcdan23`: We can now use the MMU and `kmalloc` + `kfree`! Fixed some bugs on how `mmu_map`, `mmu_translate`, `mmu_free` navigate page table entries. It didn't perform the 2 bit shift before using it as a physical pointer. Added many more debug prints. Additionally added some debugging functions for recursively printing the page table entries for all the mapped memory. Eliminated bug that caused physical memory to not map 1:1 with virtual memory in `mmu_map_range`. Fixed physical address offset calculation; previously it was always assuming the page size was 4K in this calculation.
 
-A[14:12]
+## 15-September-2023
+- `jpark78`: Move kernel page table creation and mapping to happen after `page_init()` in `main.c`. Fixed bugs in mmu_map. Fixed a missing conditional in `page_znalloc`. With this update, uncommeing USE_MMU causes a freeze at `CSR_WRITE and SFENCE_ALL`.
 
-3
+## 12-September-2023
+- `ttahmid`: Right now with the current mmu implementation, when I uncomment Use_MMU in `config.h` and `make run`, I get this output `Invalid read at addr 0x0, size 8, region '(null)', reason: rejected` in infinite loop. Trying to figure it out.
 
-Function number
+## 11-September-2023
+- `ttahmid`: fixed the warnings in `mmu_map` function in `mmu.c`. Implemented `mmu_free` and `mmu_translate` functions.
 
-A[11:8]
+## 09-September-2023
+- `amcdan23`: fixed bugs in uaccess.c from gaddi's copy_to and copy_from functions that had some bugs in which address indexes they fed to `mmu_translate`, and how it handled the offsets for the data copied from/to the first and last physical pages.
 
-4
+## 08-September-2023
+- `jpark78`: implemented mmu_map.
 
-Extended register number
+## 02-September-2023
+- `amcdan23`: changed the macros to static functions (I think the fact that they use the variable name "index" messed with other bits of code). Fixed that the OS in the master branch wouldn't boot. Rewrote `page_init` and some of `page_nalloc` to be much more readable and to work properly. Implemented `page_free`, `page_count_free`, `page_count_taken`, and created some constant macros for the bookkeeping area's size (with names including memory units like bytes vs. pages).
+- `ttahmid`: updated page.c with bookkeeping calculations, page init, page nalloc, page zalloc
 
-A[7:2]
+## 11-May-2022
 
-6
+EXAMPLE
 
-Register number
+## 09-May-2022
 
-A[1:0]
-
-2
-
-Used to generate byte enables
-
-The ECAM header starts as follows.
-
-pci ecam header
-
-The first field you need to check is the Vendor ID. If the device is not connected, this field will be 0xFFFF. If a device isn’t connected, you cannot configure it, so you can move to the next slot or bus.
-
-When a device is connected (VendorID != 0xFFFF), you need to determine if it is a bridge (type 1 device) or a device (type 0 device). The configuration is different depending on this.
-
-The 1 or 0 comes from the Header Type field (uint8_t header_type). You must configure the bridges, otherwise, the devices behind the bridges will not respond to MMIO requests.
-
-Bridges (Type-1)
-Configure your bridges to ONLY forward the memory addresses required for the devices behind the bridges. Recall you can do this by setting the memory base and limit’s upper 16 bits. Also, recall that you need to set the primary bus number to the bus that the bridge is connected to, and then set the secondary and subordinate bus numbers to the next bus available.
-
-Make sure that no two bridges have the same secondary bus number.
-Below shows what happens if you do not enumerate the bridges first. Notice that no devices are present in the "info pci" system because none of the bridges are forwarding MMIO.
-
-(qemu) info pci
-  Bus  0, device   0, function 0:
-    Host bridge: PCI device 1b36:0008
-      PCI subsystem 1af4:1100
-      id ""
-  Bus  0, device   1, function 0:
-    PCI bridge: PCI device 1b36:000c
-      IRQ 0, pin A
-      BUS 0.
-      secondary bus 0.
-      subordinate bus 0.
-      IO range [0xf000, 0x0fff]
-      memory range [0xfff00000, 0x000fffff]
-      prefetchable memory range [0xfff00000, 0x000fffff]
-      BAR0: 32 bit memory at 0xffffffffffffffff [0x00000ffe].
-      id "bridge1"
-  Bus  0, device   2, function 0:
-    PCI bridge: PCI device 1b36:000c
-      IRQ 0, pin A
-      BUS 0.
-      secondary bus 0.
-      subordinate bus 0.
-      IO range [0xf000, 0x0fff]
-      memory range [0xfff00000, 0x000fffff]
-      prefetchable memory range [0xfff00000, 0x000fffff]
-      BAR0: 32 bit memory at 0xffffffffffffffff [0x00000ffe].
-      id "bridge2"
-  Bus  0, device   3, function 0:
-    PCI bridge: PCI device 1b36:000c
-      IRQ 0, pin A
-      BUS 0.
-      secondary bus 0.
-      subordinate bus 0.
-      IO range [0xf000, 0x0fff]
-      memory range [0xfff00000, 0x000fffff]
-      prefetchable memory range [0xfff00000, 0x000fffff]
-      BAR0: 32 bit memory at 0xffffffffffffffff [0x00000ffe].
-      id "bridge3"
-  Bus  0, device   4, function 0:
-    PCI bridge: PCI device 1b36:000c
-      IRQ 0, pin A
-      BUS 0.
-      secondary bus 0.
-      subordinate bus 0.
-      IO range [0xf000, 0x0fff]
-      memory range [0xfff00000, 0x000fffff]
-      prefetchable memory range [0xfff00000, 0x000fffff]
-      BAR0: 32 bit memory at 0xffffffffffffffff [0x00000ffe].
-      id "bridge4"
-(qemu)
-After enumerating the bridge, we can see the PCI devices behind it.
-
-(qemu) info pci
-  Bus  0, device   0, function 0:
-    Host bridge: PCI device 1b36:0008
-      PCI subsystem 1af4:1100
-      id ""
-  Bus  0, device   1, function 0:
-    PCI bridge: PCI device 1b36:000c
-      IRQ 0, pin A
-      BUS 0.
-      secondary bus 1.
-      subordinate bus 1.
-      IO range [0xf000, 0x0fff]
-      memory range [0x41000000, 0x41ffffff]
-      prefetchable memory range [0x41000000, 0x41ffffff]
-      BAR0: 32 bit memory at 0x00000000 [0x00000fff].
-      id "bridge1"
-  Bus  1, device   0, function 0:
-    Class 0255: PCI device 1af4:1044
-      PCI subsystem 1af4:1100
-      IRQ 0, pin A
-      BAR1: 32 bit memory at 0x41000000 [0x41000fff].
-      BAR4: 64 bit prefetchable memory at 0x41010000 [0x41013fff].
-      id "rng"
-  Bus  1, device   1, function 0:
-    Keyboard: PCI device 1af4:1052
-      PCI subsystem 1af4:1100
-      IRQ 0, pin A
-      BAR1: 32 bit memory at 0x41040000 [0x41040fff].
-      BAR4: 64 bit prefetchable memory at 0x41050000 [0x41053fff].
-      id "keyboard"
-  Bus  1, device   2, function 0:
-    Class 2432: PCI device 1af4:1052
-      PCI subsystem 1af4:1100
-      IRQ 0, pin A
-      BAR1: 32 bit memory at 0x41080000 [0x41080fff].
-      BAR4: 64 bit prefetchable memory at 0x41090000 [0x41093fff].
-      id "tablet"
-Now you can see that Bus 1 is readable and contains the keyboard, tablet, and random number generator (aka entropy device).
-
-You need to make sure the BAR addresses do not overlap. However, you also need to make sure the memory address you place in the BAR is within the base + limit of the bridges the device is behind.
-Do NOT set the bridge BARs. You will not be configuring bridges beyond the memory limits and bus numbers.
-Devices (Type-0)
-Configure all type 0 devices and set the BARs. Recall that you need to determine the address space needed by writing -1 into a BAR. Also, remember there is a difference between 32-bit and 64-bit BARs.
-
-Make sure that the memory addresses you assign in the BARs do NOT overlap either with different BARs in the same device or different devices.
-PCI IRQs
-Recall that PCI IRQs are assigned by the bus and slot number.
-
-IRQ#=32+(bus+slot)mod4
-So, IRQs 32, 33, 34, and 35 are assigned to the PCI system.
-
-You will need to enable all of these with the PLIC. Recall that after a PCI device is finished with its work, whether successfully or an error, it will send an IRQ to let you know.
-
-Create a handoff function prototyped below.
-
-void pci_dispatch_irq(int irq_num);
-This function will look through the devices and see who caused the interrupt. Recall that since there are only four IRQ numbers, PCI devices must share them. So, to determine who caused it, you need to look at the device itself, which we will do when we look at VirtIO.
-
-This function needs to be called from the PLIC, which contains the following code.
-
-void plic_handle_irq(int hart)
-{
-    int irq = plic_claim(hart);
-
-    switch (irq) {
-        // PCI devices 32-35
-        case PLIC_PCI_INTA: [[fallthrough]]
-        case PLIC_PCI_INTB: [[fallthrough]]
-        case PLIC_PCI_INTC: [[fallthrough]]
-        case PLIC_PCI_INTD:
-#ifdef USE_PCI
-            pci_dispatch_irq(irq);
-#endif
-            break;
-    }
-
-    plic_complete(hart, irq);
-}
-This function allows us to add other IRQs, but this is only called in response to supervisor interrupts. The SBI configures the UART to interrupt in machine mode, so it bypasses this function and is instead, handled by the SBI.
+EXAMPLE
