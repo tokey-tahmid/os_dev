@@ -9,6 +9,10 @@
 #define VIRTIO_BLK_T_OUT   1
 #define VIRTIO_BLK_T_FLUSH 4
 
+#define VIRTIO_BLK_S_OK      0
+#define VIRTIO_BLK_S_IOERR   1
+#define VIRTIO_BLK_S_UNSUPP  2
+
 struct block_header {
     uint32_t type;
     uint32_t reserved;
@@ -42,8 +46,8 @@ struct virtio_blk_config {
     uint8_t  unused1[3];
 };
 
-void block_init(struct virtio_device *dev);
-int block_read(uint64_t sector, uint8_t *buffer, uint32_t size);
-int block_write(uint64_t sector, uint8_t *buffer, uint32_t size);
+void block_init();
+void block_read(uint64_t sector, void* buffer, uint32_t size);
+void block_write(uint64_t sector, void* buffer, uint32_t size);
 
 #endif

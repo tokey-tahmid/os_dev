@@ -1,45 +1,52 @@
 #include "block.h"
-#include "mmu.h"
 #include "virtio.h"
-#include "stdio.h"
+#include "pci.h"
+#include "mmu.h"
+#include <stddef.h>
 
-static struct virtio_device *block_dev = NULL;
+static struct virtio_blk_config blk_config;
 
-void block_init(struct virtio_device *dev) {
-    block_dev = dev;
-    // TODO: Initialize the block device here
-}
-
-int block_read(uint64_t sector, uint8_t *buffer, uint32_t size) {
-    if (!block_dev) {
-        printf("Block device not initialized\n");
-        return -1;
+void block_init() {
+    // Initialize PCI and get the device
+    struct pci_dev *dev = pci_init();
+    if (dev->vendorid == 0x1AF4) {
+        virtio_init(dev);
     }
 
-    // TODO: Implement block read operation
-    // 1. Setup the block request header
-    // 2. Setup the data descriptor
-    // 3. Setup the status descriptor
-    // 4. Notify the device
-    // 5. Wait for the device to complete the operation
-    // 6. Check the status and return the result
-
-    return 0;
+    // Initialize the block device
+    // You might need to read the blk_config from the device configuration section
 }
 
-int block_write(uint64_t sector, uint8_t *buffer, uint32_t size) {
-    if (!block_dev) {
-        printf("Block device not initialized\n");
-        return -1;
-    }
+void block_read(uint64_t sector, void* buffer, uint32_t size) {
+    struct block_header header = {
+        .type = VIRTIO_BLK_T_IN,
+        .reserved = 0,
+        .sector = sector
+    };
 
-    // TODO: Implement block write operation
-    // 1. Setup the block request header
-    // 2. Setup the data descriptor
-    // 3. Setup the status descriptor
-    // 4. Notify the device
-    // 5. Wait for the device to complete the operation
-    // 6. Check the status and return the result
+    // Convert virtual address to physical address
+    uint64_t paddr = mmu_translate((uint64_t)buffer);
 
-    return 0;
+    // Setup the descriptors and rings
+    // ...
+
+    // Notify the device
+    // ...
+}
+
+void block_write(uint64_t sector, void* buffer, uint32_t size) {
+    struct block_header header = {
+        .type = VIRTIO_BLK_T_OUT,
+        .reserved = 0,
+        .sector = sector
+    };
+
+    // Convert virtual address to physical address
+    uint64_t paddr = mmu_translate((uint64_t)buffer);
+
+    // Setup the descriptors and rings
+    // ...
+
+    // Notify the device
+    // ...
 }
