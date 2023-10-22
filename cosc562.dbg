@@ -4068,9 +4068,9 @@ void c_trap_handler(void)
     8001252c:	8082                	ret
 
 000000008001252e <rng_init>:
+#include <kmalloc.h>
 #include <rng.h>
 
-//use this like a queue
 static Vector *rng_active_jobs;
 
 void rng_init(){
@@ -4093,7 +4093,6 @@ void rng_init(){
 
 0000000080012550 <rng_get_numbers>:
 
-//ask an rng device for numbers
 void rng_get_numbers(struct VirtioDevice *viodev, void *buffer, uint16_t size, void* callback){
     80012550:	7139                	addi	sp,sp,-64
     80012552:	fc06                	sd	ra,56(sp)
@@ -4104,7 +4103,7 @@ void rng_get_numbers(struct VirtioDevice *viodev, void *buffer, uint16_t size, v
     80012560:	87b2                	mv	a5,a2
     80012562:	fcd43023          	sd	a3,-64(s0)
     80012566:	fcf41723          	sh	a5,-50(s0)
-    //select rng device 
+
     if(viodev->pcidev->ecam_header->device_id != VIRTIO_PCI_DEVICE_ID(VIRTIO_PCI_DEVICE_ENTROPY)){
     8001256a:	fd843783          	ld	a5,-40(s0)
     8001256e:	639c                	ld	a5,0(a5)
@@ -4122,8 +4121,6 @@ void rng_get_numbers(struct VirtioDevice *viodev, void *buffer, uint16_t size, v
     80012590:	4505                	li	a0,1
     80012592:	25d020ef          	jal	ra,80014fee <logf>
     }
-
-    //create a job
     struct RNGJob *job;
 
     job->assigned_device = viodev;
@@ -4147,8 +4144,6 @@ void rng_get_numbers(struct VirtioDevice *viodev, void *buffer, uint16_t size, v
     800125c2:	85ba                	mv	a1,a4
     800125c4:	853e                	mv	a0,a5
     800125c6:	68f040ef          	jal	ra,80017454 <vector_push>
-
-    //get random numbers
     if(!rng_fill(buffer,size,viodev)){
     800125ca:	fce45783          	lhu	a5,-50(s0)
     800125ce:	fd843603          	ld	a2,-40(s0)
@@ -4183,10 +4178,9 @@ bool rng_fill(void *buffer, uint16_t size, struct VirtioDevice *rng_device) {
     8001260c:	87ae                	mv	a5,a1
     8001260e:	fac43c23          	sd	a2,-72(s0)
     80012612:	fcf41323          	sh	a5,-58(s0)
+    uint64_t phys;
+    uint32_t at_idx;
     uint32_t mod;
-    // if (rng_device.enabled == false) {
-    //     return false;
-    // }
 
     mod = rng_device->common_cfg->queue_size;
     80012616:	fb843783          	ld	a5,-72(s0)
@@ -4199,8 +4193,6 @@ bool rng_fill(void *buffer, uint16_t size, struct VirtioDevice *rng_device) {
     80012628:	fb843783          	ld	a5,-72(s0)
     8001262c:	0487d783          	lhu	a5,72(a5)
     80012630:	fef42423          	sw	a5,-24(s0)
-
-    // All VirtIO devices deal with physical memory.
     uint64_t virt = kzalloc(size);
     80012634:	fc645783          	lhu	a5,-58(s0)
     80012638:	85be                	mv	a1,a5
@@ -4215,9 +4207,6 @@ bool rng_fill(void *buffer, uint16_t size, struct VirtioDevice *rng_device) {
     80012650:	853e                	mv	a0,a5
     80012652:	1d4010ef          	jal	ra,80013826 <mmu_translate>
     80012656:	fca43c23          	sd	a0,-40(s0)
-
-    // Fill all fields of the descriptor. Since we reuse descriptors
-    // it's best to reset ALL fields.
 
     rng_device->desc[at_idx].addr = phys;
     8001265a:	fb843783          	ld	a5,-72(s0)
@@ -4251,8 +4240,6 @@ bool rng_fill(void *buffer, uint16_t size, struct VirtioDevice *rng_device) {
     800126a2:	0792                	slli	a5,a5,0x4
     800126a4:	97ba                	add	a5,a5,a4
     800126a6:	00079723          	sh	zero,14(a5)
-
-    // Add the descriptor we just filled to the driver ring.
     rng_device->driver->ring[rng_device->driver->idx % mod] = at_idx;
     800126aa:	fb843783          	ld	a5,-72(s0)
     800126ae:	7794                	ld	a3,40(a5)
@@ -4274,7 +4261,7 @@ bool rng_fill(void *buffer, uint16_t size, struct VirtioDevice *rng_device) {
     800126d8:	0786                	slli	a5,a5,0x1
     800126da:	97b6                	add	a5,a5,a3
     800126dc:	00e79223          	sh	a4,4(a5)
-    // As soon as we increment the index, it is "visible"
+
     rng_device->driver->idx += 1;
     800126e0:	fb843783          	ld	a5,-72(s0)
     800126e4:	779c                	ld	a5,40(a5)
@@ -4303,10 +4290,6 @@ bool rng_fill(void *buffer, uint16_t size, struct VirtioDevice *rng_device) {
     80012722:	fb843783          	ld	a5,-72(s0)
     80012726:	04e79423          	sh	a4,72(a5)
 
-    // We select the notification address by multiplying the queue_notify_offset
-    // by the queue notification multiplier from the notification PCI capability.
-    // We then add this to the BAR offset from the capability's "offset" field.
-    // Then, we add all of this to the base address.
     virtio_notify(rng_device,at_idx);
     8001272a:	fe842783          	lw	a5,-24(s0)
     8001272e:	17c2                	slli	a5,a5,0x30
@@ -4384,7 +4367,6 @@ void rng_job_done(VirtioDevice *vertdevice){
     if(job != NULL){
     800127c6:	fe843783          	ld	a5,-24(s0)
     800127ca:	cf89                	beqz	a5,800127e4 <rng_job_done+0x9c>
-        //pop most recent job for the given device and send output to the callback function
 
         Callback callback_func = job->callback;
     800127cc:	fe843783          	ld	a5,-24(s0)
@@ -6368,19 +6350,13 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     80013832:	f8b43823          	sd	a1,-112(s0)
     int i; 
 
-    // debugf("mmu_translate: page table at 0x%016lx\n", tab);
-    // debugf("mmu_translate: vaddr == 0x%016lx\n", vaddr);
-
     if (tab == NULL) { 
     80013836:	f9843783          	ld	a5,-104(s0)
     8001383a:	e399                	bnez	a5,80013840 <mmu_translate+0x1a>
-        // debugf("mmu_translate: tab == NULL\n");
         return MMU_TRANSLATE_PAGE_FAULT; 
     8001383c:	57fd                	li	a5,-1
     8001383e:	aaa9                	j	80013998 <mmu_translate+0x172>
     } 
-
-    // Extract the virtual page numbers
     uint64_t vpn[] = {(vaddr >> ADDR_0_BIT) & 0x1FF, 
     80013840:	f9043783          	ld	a5,-112(s0)
     80013844:	83b1                	srli	a5,a5,0xc
@@ -6398,19 +6374,13 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     80013862:	1ff7f793          	andi	a5,a5,511
     uint64_t vpn[] = {(vaddr >> ADDR_0_BIT) & 0x1FF, 
     80013866:	faf43c23          	sd	a5,-72(s0)
-    // debugf("mmu_translate: vpn[0] == 0x%03lx\n", vpn[0]);
-    // debugf("mmu_translate: vpn[1] == 0x%03lx\n", vpn[1]);
-    // debugf("mmu_translate: vpn[2] == 0x%03lx\n", vpn[2]);
 
     uint64_t lvl = MMU_LEVEL_4K;
     8001386a:	fe043023          	sd	zero,-32(s0)
-    // Traverse the page table hierarchy using the virtual page numbers
     for (i = MMU_LEVEL_1G; i >= MMU_LEVEL_4K; i--) {
     8001386e:	4789                	li	a5,2
     80013870:	fef42623          	sw	a5,-20(s0)
     80013874:	a075                	j	80013920 <mmu_translate+0xfa>
-        // Iterate through and print the page table entries
-        // debugf("mmu_translate: tab->entries == 0x%08lx\n", tab->entries);
         for (int j = 0; j < (PAGE_SIZE / 8); j++) {
     80013876:	fc042e23          	sw	zero,-36(s0)
     8001387a:	a031                	j	80013886 <mmu_translate+0x60>
@@ -6422,7 +6392,6 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     8001388e:	1ff00793          	li	a5,511
     80013892:	fee7d5e3          	bge	a5,a4,8001387c <mmu_translate+0x56>
             if (tab->entries[j] & PB_VALID) {
-                // debugf("mmu_translate: tab->entries[%x] == 0x%0lx\n", j, tab->entries[j]);
             }
         }
 
@@ -6438,8 +6407,7 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     800138ae:	639c                	ld	a5,0(a5)
     800138b0:	8b85                	andi	a5,a5,1
     800138b2:	e399                	bnez	a5,800138b8 <mmu_translate+0x92>
-            // debugf("mmu_translate: entry %x in page table at 0x%08lx is invalid\n", vpn[i], tab);
-            return MMU_TRANSLATE_PAGE_FAULT; // Entry is not valid
+            return MMU_TRANSLATE_PAGE_FAULT;
     800138b4:	57fd                	li	a5,-1
     800138b6:	a0cd                	j	80013998 <mmu_translate+0x172>
         } else if (!is_leaf(tab->entries[vpn[i]])) {
@@ -6458,7 +6426,6 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     800138da:	0017c793          	xori	a5,a5,1
     800138de:	0ff7f793          	andi	a5,a5,255
     800138e2:	c78d                	beqz	a5,8001390c <mmu_translate+0xe6>
-            // debugf("mmu_translate: entry %x in page table at 0x%08lx is a branch to 0x%08lx\n", vpn[i], tab, (tab->entries[vpn[i]] & ~0x3FF) << 2);
             tab = (struct page_table *)((tab->entries[vpn[i]] & ~0x3FF) << 2);
     800138e4:	fec42783          	lw	a5,-20(s0)
     800138e8:	078e                	slli	a5,a5,0x3
@@ -6475,11 +6442,10 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     80013906:	f8f43c23          	sd	a5,-104(s0)
     8001390a:	a031                	j	80013916 <mmu_translate+0xf0>
         } else {
-            // debugf("mmu_translate: entry %x in page table at 0x%08lx is a leaf\n", vpn[i], tab);
             lvl = i;
     8001390c:	fec42783          	lw	a5,-20(s0)
     80013910:	fef43023          	sd	a5,-32(s0)
-            break; // Entry is a leaf
+            break;
     80013914:	a819                	j	8001392a <mmu_translate+0x104>
     for (i = MMU_LEVEL_1G; i >= MMU_LEVEL_4K; i--) {
     80013916:	fec42783          	lw	a5,-20(s0)
@@ -6490,8 +6456,6 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     80013926:	f407d8e3          	bgez	a5,80013876 <mmu_translate+0x50>
         }
     }
-
-    // debugf("mmu_translate: vaddr == 0x%08lx\n", vaddr);
 
     uint64_t page_mask = PAGE_SIZE_AT_LVL(lvl) - 1;
     8001392a:	fe043783          	ld	a5,-32(s0)
@@ -6509,8 +6473,6 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     80013948:	37fd                	addiw	a5,a5,-1
     8001394a:	2781                	sext.w	a5,a5
     8001394c:	fcf43823          	sd	a5,-48(s0)
-    
-    // Extract the physical address from the final page table entry
     uint64_t paddr = ((tab->entries[vpn[lvl]] & ~0x3FF) << 2) & ~page_mask;
     80013950:	fe043783          	ld	a5,-32(s0)
     80013954:	078e                	slli	a5,a5,0x3
@@ -6536,9 +6498,8 @@ uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr)
     8001398a:	fc843703          	ld	a4,-56(s0)
     8001398e:	8fd9                	or	a5,a5,a4
     80013990:	fcf43023          	sd	a5,-64(s0)
-    // debugf("mmu_translate: paddr == 0x%08lx\n", result);
 
-    return result; // Combine with the offset within the page
+    return result;
     80013994:	fc043783          	ld	a5,-64(s0)
 }
     80013998:	853e                	mv	a0,a5
@@ -10166,7 +10127,6 @@ VirtioDevice *virtio_get_by_device(PCIDevice *pcidevice){
 
 00000000800157a8 <virtio_count_saved_devices>:
 
-// Get the number of saved Virtio devices.
 uint64_t virtio_count_saved_devices(void) {
     800157a8:	1141                	addi	sp,sp,-16
     800157aa:	e406                	sd	ra,8(sp)
@@ -10191,10 +10151,6 @@ uint64_t virtio_count_saved_devices(void) {
 
 00000000800157d2 <virtio_get_capability>:
 
-// Get a virtio capability for a given device by the virtio capability's type.
-// If this is zero, it will get the common configuration capability. If this is
-// one, it will get the notify capability. If this is two, it will get the ISR
-// capability. Etc.
 volatile struct VirtioCapability *virtio_get_capability(VirtioDevice *dev, uint8_t type) {
     800157d2:	1101                	addi	sp,sp,-32
     800157d4:	ec06                	sd	ra,24(sp)
@@ -10234,16 +10190,12 @@ void virtio_init(void) {
     8001580c:	00005517          	auipc	a0,0x5
     80015810:	55450513          	addi	a0,a0,1364 # 8001ad60 <pow10.0+0xb30>
     80015814:	839ff0ef          	jal	ra,8001504c <debugf>
-    // Initialize the vector of virtio devices
     virtio_devices = vector_new();
     80015818:	39d010ef          	jal	ra,800173b4 <vector_new>
     8001581c:	872a                	mv	a4,a0
     8001581e:	00004797          	auipc	a5,0x4
     80015822:	86278793          	addi	a5,a5,-1950 # 80019080 <virtio_devices>
     80015826:	e398                	sd	a4,0(a5)
-
-    // Get the number of PCI devices saved
-    // This will allow us to iterate through all of them and find the virtio devices
     uint64_t num_pci_devices = pci_count_saved_devices();
     80015828:	a58fd0ef          	jal	ra,80012a80 <pci_count_saved_devices>
     8001582c:	fca43823          	sd	a0,-48(s0)
@@ -10251,7 +10203,6 @@ void virtio_init(void) {
     for (uint64_t i = 0; i < num_pci_devices; ++i) {
     80015830:	fc043c23          	sd	zero,-40(s0)
     80015834:	a27d                	j	800159e2 <virtio_init+0x1e0>
-        // Get the PCI device
         PCIDevice *pcidevice = pci_get_nth_saved_device(i);
     80015836:	fd843783          	ld	a5,-40(s0)
     8001583a:	17c2                	slli	a5,a5,0x30
@@ -10259,20 +10210,16 @@ void virtio_init(void) {
     8001583e:	853e                	mv	a0,a5
     80015840:	bd6fd0ef          	jal	ra,80012c16 <pci_get_nth_saved_device>
     80015844:	fca43423          	sd	a0,-56(s0)
-        
-        // Is this a virtio device?
-        if (pci_is_virtio_device(pcidevice)) { // Access through ecam_header
+
+        if (pci_is_virtio_device(pcidevice)) { 
     80015848:	fc843503          	ld	a0,-56(s0)
     8001584c:	fcffc0ef          	jal	ra,8001281a <pci_is_virtio_device>
     80015850:	87aa                	mv	a5,a0
     80015852:	18078363          	beqz	a5,800159d8 <virtio_init+0x1d6>
-            // Create a new bookkeeping structure for the virtio device
             VirtioDevice viodev;
-            // Add the PCI device to the bookkeeping structure
             viodev.pcidev = pcidevice;
     80015856:	fc843783          	ld	a5,-56(s0)
     8001585a:	f6f43823          	sd	a5,-144(s0)
-            // Add the common configuration, notify capability, and ISR to the bookkeeping structure
             viodev.common_cfg = pci_get_virtio_common_config(pcidevice);
     8001585e:	fc843503          	ld	a0,-56(s0)
     80015862:	d38fd0ef          	jal	ra,80012d9a <pci_get_virtio_common_config>
@@ -10288,11 +10235,9 @@ void virtio_init(void) {
     8001587e:	d60fd0ef          	jal	ra,80012dde <pci_get_virtio_isr_status>
     80015882:	87aa                	mv	a5,a0
     80015884:	f8f43423          	sd	a5,-120(s0)
-            // Fix qsize below
             uint16_t qsize = 128;
     80015888:	08000793          	li	a5,128
     8001588c:	fcf41323          	sh	a5,-58(s0)
-            // Allocate contiguous physical memory for descriptor table, driver ring, and device ring
             viodev.desc = (VirtioDescriptor *)kmalloc(VIRTIO_DESCRIPTOR_TABLE_BYTES(qsize));
     80015890:	fc645783          	lhu	a5,-58(s0)
     80015894:	2781                	sext.w	a5,a5
@@ -10325,7 +10270,6 @@ void virtio_init(void) {
     800158da:	87aa                	mv	a5,a0
     800158dc:	faf43023          	sd	a5,-96(s0)
 
-            // Initialize the indices
             viodev.desc_idx = 0;
     800158e0:	fa041c23          	sh	zero,-72(s0)
             viodev.driver_idx = 0;
@@ -10333,7 +10277,6 @@ void virtio_init(void) {
             viodev.device_idx = 0;
     800158e8:	fa041e23          	sh	zero,-68(s0)
             
-            // Add the physical addresses for the descriptor table, driver ring, and device ring to the common configuration
             viodev.common_cfg->queue_desc = kernel_mmu_translate(viodev.desc);
     800158ec:	f9043783          	ld	a5,-112(s0)
     800158f0:	f7843483          	ld	s1,-136(s0)
@@ -10387,7 +10330,6 @@ void virtio_init(void) {
     80015974:	4705                	li	a4,1
     80015976:	00e79e23          	sh	a4,28(a5)
             
-            // Add to vector using vector_push
             virtio_save_device(viodev);
     8001597a:	f7043e03          	ld	t3,-144(s0)
     8001597e:	f7843303          	ld	t1,-136(s0)
@@ -10469,15 +10411,12 @@ void virtio_notify(VirtioDevice *viodev, uint16_t which_queue)
         return;
     80015a44:	a851                	j	80015ad8 <virtio_notify+0xd2>
     }
-
-    // Select the queue we are looking at
     viodev->common_cfg->queue_select = which_queue;
     80015a46:	fc843783          	ld	a5,-56(s0)
     80015a4a:	679c                	ld	a5,8(a5)
     80015a4c:	fc645703          	lhu	a4,-58(s0)
     80015a50:	00e79b23          	sh	a4,22(a5)
 
-    // Determine offset for the given queue
     uint8_t bar_num = viodev->notify_cap->cap.bar;
     80015a54:	fc843783          	ld	a5,-56(s0)
     80015a58:	6b9c                	ld	a5,16(a5)
@@ -10525,8 +10464,6 @@ void virtio_notify(VirtioDevice *viodev, uint16_t which_queue)
     80015ac2:	1782                	slli	a5,a5,0x20
     80015ac4:	9381                	srli	a5,a5,0x20
     80015ac6:	fcf43823          	sd	a5,-48(s0)
-
-    // Write the queue's number to the notify register
     *notify = which_queue; 
     80015aca:	fd043783          	ld	a5,-48(s0)
     80015ace:	fc645703          	lhu	a4,-58(s0)
