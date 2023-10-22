@@ -157,14 +157,14 @@ typedef struct VirtioDeviceRing {
     // uint16_t     avail_event;
 } VirtioDeviceRing;
 
-struct List;
-
 // This is the actual Virtio device structure that the OS will
 // keep track of for each device. It contains the data for the OS
 // to quickly access vital information for the device.
 typedef struct VirtioDevice {
-    // A pointer the PCI device structure for this Virtio device.
-    // Right now this just points to the ECAM for the device.
+    // A pointer the PCIDevice bookkeeping structure.
+    // This is used by the OS to track useful information about
+    // the PCIDevice, and as a useful interface for configuring
+    // the device.
     struct PCIDevice *pcidev;
     // The common configuration for the device.
     volatile VirtioPciCommonCfg *common_cfg;
@@ -207,3 +207,21 @@ typedef struct VirtioDevice {
 
 void virtio_init(void);
 void virtio_notify(VirtioDevice *viodev, uint16_t which_queue);
+
+// Find a saved device by its index.
+VirtioDevice *virtio_get_nth_saved_device(uint16_t n);
+
+// Save the Virtio device for later use.
+void virtio_save_device(VirtioDevice device);
+
+// Get the number of saved Virtio devices.
+uint64_t virtio_count_saved_devices(void);
+
+// Get a virtio capability for a given device by the virtio capability's type.
+// If this is zero, it will get the common configuration capability. If this is
+// one, it will get the notify capability. If this is two, it will get the ISR
+// capability. Etc.
+volatile VirtioCapability *virtio_get_capability(VirtioDevice *dev, uint8_t type);
+
+//get a virtio device by using a pcidevice pointer
+VirtioDevice *virtio_get_by_device(PCIDevice *pcidevice);
