@@ -45,4 +45,5 @@ objs/block.o: src/block.c \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/thread-shared-types.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/pthreadtypes-arch.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/alloca.h \
- /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/stdlib-float.h
+ /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/stdlib-float.h \
+ util/include/map.h
