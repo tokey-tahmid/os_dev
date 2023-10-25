@@ -27,4 +27,5 @@ objs/trap.o: src/trap.c src/include/config.h src/include/csr.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/asm-generic/unistd.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/asm/bitsperlong.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/asm-generic/bitsperlong.h \
- /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/syscall.h
+ /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/syscall.h \
+ src/include/trap.h

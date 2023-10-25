@@ -1,53 +1,48 @@
-#ifndef _BLOCK_H
-#define _BLOCK_H
+/*
+* Random Number Generator Driver header
+*/
+#pragma once
 
 #include <stdint.h>
-#include "virtio.h"
+#include <pci.h>
+#include <virtio.h>
+#include <stdbool.h>
+#include <debug.h>
+#include <mmu.h>
+#include <kmalloc.h>
 
-#define SECTOR_SIZE        512
-#define VIRTIO_BLK_T_IN    0
-#define VIRTIO_BLK_T_OUT   1
+#define VIRTIO_BLK_T_IN 0
+#define VIRTIO_BLK_T_OUT 1
 #define VIRTIO_BLK_T_FLUSH 4
+#define VIRTIO_BLK_T_DISCARD 11
+#define VIRTIO_BLK_T_WRITE_ZEROES 13
 
-#define VIRTIO_BLK_S_OK      0
-#define VIRTIO_BLK_S_IOERR   1
-#define VIRTIO_BLK_S_UNSUPP  2
+#define VIRTIO_BLK_S_OK 0
+#define VIRTIO_BLK_S_IOERR 1
+#define VIRTIO_BLK_S_UNSUPP 2
 
-struct block_header {
-    uint32_t type;
+void block_device_init(void);
+
+typedef struct BlockRequestPacket {
+    // First descriptor
+    uint32_t type;      // IN/OUT
     uint32_t reserved;
-    uint64_t sector;
-};
+    uint64_t sector;    // start sector (LBA / cfg->blk_size)
+    // Second descriptor
+    // Multiple of cfg->blk_size
+    // which will be 512.
+    uint8_t *data;
+    uint8_t sector_count; // Number of sectors to read/write
+    // Third descriptor
+    uint8_t status;
+} BlockRequestPacket;
 
-struct virtio_blk_config {
-    uint64_t capacity;
-    uint32_t size_max;
-    uint32_t seg_max;
-    struct virtio_blk_geometry {
-        uint16_t cylinders;
-        uint8_t  heads;
-        uint8_t  sectors;
-    } geometry;
-    uint32_t blk_size;
-    struct virtio_blk_topology {
-        uint8_t  physical_block_exp;
-        uint8_t  alignment_offset;
-        uint16_t min_io_size;
-        uint32_t opt_io_size;
-    } topology;
-    uint8_t  writeback;
-    uint8_t  unused0[3];
-    uint32_t max_discard_sectors;
-    uint32_t max_discard_seg;
-    uint32_t discard_sector_alignment;
-    uint32_t max_write_zeroes_sectors;
-    uint32_t max_write_zeroes_seg;
-    uint8_t  write_zeroes_may_unmap;
-    uint8_t  unused1[3];
-};
+void block_device_send_request(BlockRequestPacket *packet);
 
-void block_init();
-void block_read(uint64_t sector, void* buffer, uint32_t size);
-void block_write(uint64_t sector, void* buffer, uint32_t size);
+void block_device_read_sector(uint64_t sector, uint8_t *data);
 
-#endif
+void block_device_write_sector(uint64_t sector, uint8_t *data);
+
+void block_device_read_sectors(uint64_t sector, uint8_t *data, uint64_t count);
+
+void block_device_write_sectors(uint64_t sector, uint8_t *data, uint64_t count);

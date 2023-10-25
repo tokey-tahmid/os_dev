@@ -89,14 +89,14 @@ typedef struct VirtioPciCommonCfg {
 #define VIRTIO_PCI_CAP_NOTIFY_CFG 2
 // A notify register is how we tell the device to "go and do"
 // what we asked it to do.
-typedef struct VirtioPciNotifyCap {
+typedef struct VirtioPciNotifyCfg {
+    VirtioCapability cap;
     // The actual memory address we write to notify a queue
     // is given by the **cap** portion of this structure. In there,
     // we retrieve the BAR + the offset.
-    VirtioCapability cap;
     // Then, we multiply the `queue_notify_off` by the `notify_off_multiplier`.
     uint32_t notify_off_multiplier; /* Multiplier for queue_notify_off. */
-} VirtioPciNotifyCap;
+} VirtioPciNotifyCfg;
 #define BAR_NOTIFY_CAP(offset, queue_notify_off, notify_off_multiplier) \
     ((offset) + (queue_notify_off) * (notify_off_multiplier))
 
@@ -104,7 +104,7 @@ typedef struct VirtioPciNotifyCap {
 #define VIRTIO_PCI_CAP_ISR_CFG 3
 // The ISR notifies us that this particular device caused an interrupt.
 // The ISR has this layout.
-typedef struct VirtioPciIsrCap {
+typedef struct VirtioPciIsrCfg {
     union {
         struct {
             // If we read `queue_interrupt` and it is 1, then
@@ -121,7 +121,7 @@ typedef struct VirtioPciIsrCap {
         // integer.
         unsigned int isr_cap;
     };
-} VirtioPciIsrCap;
+} VirtioPciIsrCfg;
 
 #define VIRTIO_PCI_CAP_DEVICE_CFG 4
 #define VIRTIO_PCI_CAP_PCI_CFG    5
@@ -165,13 +165,13 @@ typedef struct VirtioDevice {
     // This is used by the OS to track useful information about
     // the PCIDevice, and as a useful interface for configuring
     // the device.
-    struct PCIDevice *pcidev;
+    volatile struct PCIDevice *pcidev;
     // The common configuration for the device.
-    volatile VirtioPciCommonCfg *common_cfg;
+    volatile struct VirtioPciCommonCfg *common_cfg;
     // The notify configuration for the device.
-    volatile VirtioPciNotifyCap *notify_cap;
+    volatile struct VirtioPciNotifyCfg *notify_cap;
     // volatile uint16_t *notify;
-    volatile VirtioPciIsrCap *isr;
+    volatile struct VirtioPciIsrCfg *isr;
 
     // The descriptor ring for the device.
     volatile VirtioDescriptor *desc;
@@ -188,7 +188,7 @@ typedef struct VirtioDevice {
     uint16_t device_idx;
 
     // uint16_t notifymult;
-    bool     ready;
+    bool ready;
 } VirtioDevice;
 
 #define VIRTIO_F_RESET         0
@@ -206,10 +206,15 @@ typedef struct VirtioDevice {
 #define VIRTIO_DEVICE_TABLE_BYTES(qsize)       (6 + 8 * (qsize))
 
 void virtio_init(void);
-void virtio_notify(VirtioDevice *viodev, uint16_t which_queue);
+void virtio_notify(volatile VirtioDevice *viodev, uint16_t which_queue);
 
 // Find a saved device by its index.
 VirtioDevice *virtio_get_nth_saved_device(uint16_t n);
+
+// Get the RNG device from the list of virtio devices.
+VirtioDevice *virtio_get_rng_device();
+// Is this an RNG device?
+bool virtio_is_rng_device(VirtioDevice *dev);
 
 // Save the Virtio device for later use.
 void virtio_save_device(VirtioDevice device);
@@ -221,7 +226,51 @@ uint64_t virtio_count_saved_devices(void);
 // If this is zero, it will get the common configuration capability. If this is
 // one, it will get the notify capability. If this is two, it will get the ISR
 // capability. Etc.
-volatile VirtioCapability *virtio_get_capability(VirtioDevice *dev, uint8_t type);
+volatile VirtioCapability *virtio_get_capability(volatile VirtioDevice *dev, uint8_t type);
 
 //get a virtio device by using a pcidevice pointer
-VirtioDevice *virtio_get_by_device(PCIDevice *pcidevice);
+volatile VirtioDevice *virtio_get_by_device(volatile PCIDevice *pcidevice);
+
+volatile uint32_t *virtio_notify_register(volatile VirtioDevice *device);
+
+
+void virtio_send_descriptor(volatile VirtioDevice *device, uint16_t which_queue, VirtioDescriptor descriptor, bool notify_device_when_done);
+
+VirtioDescriptor *virtio_receive_descriptor(volatile VirtioDevice *device, uint16_t which_queue, uint32_t *id, uint32_t *len);
+
+uint64_t virtio_count_received_descriptors(volatile VirtioDevice *device, uint16_t which_queue);
+
+
+typedef struct VirtioBlockConfig {
+   uint64_t capacity;
+   uint32_t size_max;
+   uint32_t seg_max;
+   struct VirtioBlockGeometry {
+      uint16_t cylinders;
+      uint8_t heads;
+      uint8_t sectors;
+   } geometry;
+   uint32_t blk_size; // the size of a sector, usually 512
+   struct VirtioBlockTopology {
+      // # of logical blocks per physical block (log2)
+      uint8_t physical_block_exp;
+      // offset of first aligned logical block
+      uint8_t alignment_offset;
+      // suggested minimum I/O size in blocks
+      uint16_t min_io_size;
+      // optimal (suggested maximum) I/O size in blocks
+      uint32_t opt_io_size;
+   } topology;
+   uint8_t writeback;
+   uint8_t unused0[3];
+   uint32_t max_discard_sectors;
+   uint32_t max_discard_seg;
+   uint32_t discard_sector_alignment;
+   uint32_t max_write_zeroes_sectors;
+   uint32_t max_write_zeroes_seg;
+   uint8_t write_zeroes_may_unmap;
+   uint8_t unused1[3];
+} VirtioBlockConfig;
+
+
+volatile struct VirtioBlockConfig *virtio_get_block_config(VirtioDevice *device);

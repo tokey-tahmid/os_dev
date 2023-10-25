@@ -6,6 +6,7 @@
 #include <lock.h>
 #include <mmu.h>
 #include <page.h>
+#include <csr.h>
 #include <util.h>
 
 #define PTE_PPN0_BIT 10
@@ -104,42 +105,63 @@ void mmu_free(struct page_table *tab)
     } 
 
     page_free(tab); 
+    SFENCE_ALL();
 }
 
 uint64_t mmu_translate(const struct page_table *tab, uint64_t vaddr) 
 { 
-    int i; 
+
+    // debugf("mmu_translate: page table at 0x%016lx\n", tab);
+    // debugf("mmu_translate: vaddr == 0x%016lx\n", vaddr);
 
     if (tab == NULL) { 
+        // debugf("mmu_translate: tab == NULL\n");
         return MMU_TRANSLATE_PAGE_FAULT; 
     } 
+
+    // Extract the virtual page numbers
     uint64_t vpn[] = {(vaddr >> ADDR_0_BIT) & 0x1FF, 
                       (vaddr >> ADDR_1_BIT) & 0x1FF, 
                       (vaddr >> ADDR_2_BIT) & 0x1FF};
+    // debugf("mmu_translate: vpn[0] == 0x%03lx\n", vpn[0]);
+    // debugf("mmu_translate: vpn[1] == 0x%03lx\n", vpn[1]);
+    // debugf("mmu_translate: vpn[2] == 0x%03lx\n", vpn[2]);
 
-    uint64_t lvl = MMU_LEVEL_4K;
-    for (i = MMU_LEVEL_1G; i >= MMU_LEVEL_4K; i--) {
+    uint64_t lvl = MMU_LEVEL_1G;
+    // Traverse the page table hierarchy using the virtual page numbers
+    for (int i = MMU_LEVEL_1G; i >= MMU_LEVEL_4K; i--) {
+        // Iterate through and print the page table entries
+        // debugf("mmu_translate: tab->entries == 0x%08lx\n", tab->entries);
         for (int j = 0; j < (PAGE_SIZE / 8); j++) {
             if (tab->entries[j] & PB_VALID) {
+                // debugf("mmu_translate: tab->entries[%x] == 0x%0lx\n", j, tab->entries[j]);
             }
         }
 
         if (!(tab->entries[vpn[i]] & PB_VALID)) {
-            return MMU_TRANSLATE_PAGE_FAULT;
+            // debugf("mmu_translate: entry %x in page table at 0x%08lx is invalid\n", vpn[i], tab);
+            return MMU_TRANSLATE_PAGE_FAULT; // Entry is not valid
         } else if (!is_leaf(tab->entries[vpn[i]])) {
+            // debugf("mmu_translate: entry %x in page table at 0x%08lx is a branch to 0x%08lx\n", vpn[i], tab, (tab->entries[vpn[i]] & ~0x3FF) << 2);
             tab = (struct page_table *)((tab->entries[vpn[i]] & ~0x3FF) << 2);
         } else {
+            // debugf("mmu_translate: entry %x in page table at 0x%08lx is a leaf\n", vpn[i], tab);
             lvl = i;
-            break;
+            break; // Entry is a leaf
         }
     }
 
+    // debugf("mmu_translate: vaddr == 0x%08lx\n", vaddr);
+
     uint64_t page_mask = PAGE_SIZE_AT_LVL(lvl) - 1;
+    
+    // Extract the physical address from the final page table entry
     uint64_t paddr = ((tab->entries[vpn[lvl]] & ~0x3FF) << 2) & ~page_mask;
 
     uint64_t result = paddr | (vaddr & page_mask);
+    // debugf("mmu_translate: paddr == 0x%08lx\n", result);
 
-    return result;
+    return result; // Combine with the offset within the page
 }
 
 uint64_t kernel_mmu_translate(uint64_t vaddr) 
@@ -173,7 +195,7 @@ uint64_t mmu_map_range(struct page_table *tab,
         pages_mapped += 1;
     }
     // debugf("mmu_map_range: mapped %d pages\n", pages_mapped);
-
+    SFENCE_ALL();
     return pages_mapped;
 } 
 

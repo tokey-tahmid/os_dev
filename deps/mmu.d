@@ -5,4 +5,5 @@ objs/mmu.o: src/mmu.c util/include/compiler.h src/include/config.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stddef.h \
  src/include/lock.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stdbool.h \
- src/include/mmu.h src/include/page.h util/include/util.h
+ src/include/mmu.h src/include/page.h src/include/csr.h \
+ util/include/util.h

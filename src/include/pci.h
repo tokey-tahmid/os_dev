@@ -15,7 +15,6 @@
 #include <stdint.h>
 #include <vector.h>
 
-
 // PciEcam follows the structure of the PCI ECAM in the
 // PCIe manual.
 struct pci_ecam {
@@ -91,6 +90,7 @@ struct pci_ecam {
 typedef struct PCIDevice {
     // A pointer to the PCI device's ECAM header.
     volatile struct pci_ecam *ecam_header;
+    volatile void *bars[6];
 } PCIDevice;
 
 
@@ -131,6 +131,7 @@ uint64_t pci_count_irq_listeners(uint8_t irq);
 // is not found, then NULL is returned.
 volatile struct pci_cape* pci_get_capability(PCIDevice *dev, uint8_t type, uint8_t nth);
 
+
 /// Get a virtio capability for a given PCI device by the virtio capability's type.
 /// If this is zero, it will get the common configuration capability. If this is
 /// one, it will get the notify capability. If this is two, it will get the ISR
@@ -139,23 +140,31 @@ volatile struct VirtioCapability *pci_get_virtio_capability(PCIDevice *device, u
 /// Get the common configuration structure for a given virtio device connected to PCI.
 volatile struct VirtioPciCommonCfg *pci_get_virtio_common_config(PCIDevice *device);
 /// Get the notify configuration structure for a given virtio device connected to PCI.
-volatile struct VirtioPciNotifyCap *pci_get_virtio_notify_capability(PCIDevice *device);
+volatile struct VirtioPciNotifyCfg *pci_get_virtio_notify_capability(PCIDevice *device);
 /// Get the interrupt service routine structure for a given virtio device connected to PCI.
-volatile struct VirtioPciIsrCap *pci_get_virtio_isr_status(PCIDevice *device);
+volatile struct VirtioPciIsrCfg *pci_get_virtio_isr_status(PCIDevice *device);
+/// Get the device specific configuration structure for a given virtio device connected to PCI.
+volatile void *pci_get_device_specific_config(PCIDevice *dev);
+
+volatile uint8_t *pci_get_device_bar(PCIDevice *device, uint8_t bar_num);
 
 struct pci_cape {
     uint8_t id;
     uint8_t next;
 };
 
+
+
 // #define PCI_IS_64_BIT_BAR(dev, barno) (0b100 == ((dev)->ecam->type0.bar[barno] & 0b110))
 
 #define STATUS_REG_CAP                (1 << 4)
+#define COMMAND_REG_PIO               (1 << 0)
 #define COMMAND_REG_MMIO              (1 << 1)
 #define COMMAND_REG_BUSMASTER         (1 << 2)
-static const uint64_t ECAM_START   = 0x30000000;
-static const uint64_t VIRTIO_START = 0x40000000;
-static uint64_t VIRTIO_LAST_BAR = 0x40000000;
+
+#define PCIE_ECAM_BASE 0x30000000
+#define PCIE_ECAM_END  0x3FFFFFFF
+#define PCIE_MMIO_BASE 0x40000000
 
 /**
  * @brief Initialize the PCI subsystem
@@ -167,4 +176,3 @@ void pci_init(void);
  * @param irq - the IRQ number that interrupted
  */
 void pci_dispatch_irq(int irq);
-

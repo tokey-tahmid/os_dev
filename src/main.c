@@ -10,6 +10,8 @@
 #include <debug.h>
 #include <mmu.h>
 #include <page.h>
+#include <csr.h>
+#include <trap.h>
 
 // Global MMU table for the kernel. This is used throughout
 // the kernel.
@@ -28,6 +30,8 @@ static void init_systems(void)
 #ifdef USE_MMU
     struct page_table *pt = mmu_table_create();
     kernel_mmu_table = pt;
+
+    debugf("Kernel page table at %p\n", pt);
     // Map memory segments for our kernel
     debugf("Mapping kernel segments\n");
     mmu_map_range(pt, sym_start(text), sym_end(heap), sym_start(text), MMU_LEVEL_1G,
@@ -37,10 +41,10 @@ static void init_systems(void)
     mmu_map_range(pt, 0x0C000000, 0x0C2FFFFF, 0x0C000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
     // PCIe ECAM
     debugf("Mapping PCIe ECAM\n");
-    mmu_map_range(pt, 0x30000000, 0x30FFFFFF, 0x30000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
+    mmu_map_range(pt, 0x30000000, 0x3FFFFFFF, 0x30000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
     // PCIe MMIO
     debugf("Mapping PCIe MMIO\n");
-    mmu_map_range(pt, 0x40000000, 0x40FFFFFF, 0x40000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
+    mmu_map_range(pt, 0x40000000, 0x5FFFFFFF, 0x40000000, MMU_LEVEL_2M, PB_READ | PB_WRITE);
     // debugf("Testing MMU translation\n");
     // debugf("0x%08lx -> 0x%08lx\n", 0x0C000000, mmu_translate(pt, 0x0C000000));
     // debugf("0x%08lx -> 0x%08lx\n", 0x30000000, mmu_translate(pt, 0x30000000));
@@ -56,6 +60,7 @@ static void init_systems(void)
     CSR_WRITE("satp", SATP_KERNEL); 
     SFENCE_ALL();
     debugf("MMU enabled\n");
+
 #endif
 
 #ifdef USE_HEAP
@@ -83,6 +88,66 @@ static void init_systems(void)
 #endif
 #ifdef USE_VIRTIO
     virtio_init();
+    uint64_t stvec = trampoline_trap_start;
+    
+	// # 0    - gpregs
+    // # 256  - fpregs
+    // # 512  - sepc
+    // # 520  - sstatus
+    // # 528  - sie
+    // # 536  - satp
+    // # 544  - sscratch
+    // # 552  - stvec
+    // # 560  - trap_satp
+    // # 568  - trap_stack
+    // trampoline_thread_start();
+
+    stvec &= ~0x3;
+    CSR_WRITE("stvec", trampoline_trap_start);
+    debugf("STVEC: 0x%p, 0x%p\n", stvec, trampoline_trap_start);
+
+    Trapframe *sscratch = kzalloc(sizeof(Trapframe) * 0x1000);
+    
+    CSR_READ(sscratch->sepc, "sepc");
+    CSR_READ(sscratch->sstatus, "sstatus");
+    CSR_READ(sscratch->sie, "sie");
+    CSR_READ(sscratch->satp, "satp");
+    CSR_READ(sscratch->stvec, "stvec");
+    CSR_READ(sscratch->trap_satp, "satp");
+    sscratch->trap_stack = (uint64_t)kmalloc(0x4000);
+    CSR_WRITE("sscratch", sscratch);
+
+    uint8_t buffer[16] = {0};
+    debugf("RNG State Before:");
+    for (int i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
+        debugf(" %d ", buffer[i]);
+    }
+    debugf("\n");
+
+    debugf("RNG init done; about to fill\n");
+    rng_fill(buffer, 16);
+    debugf("RNG State After:");
+    for (int i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
+        debugf(" %d ", buffer[i]);
+    }
+    
+    rng_fill(buffer, 16);
+    for (int i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
+        debugf(" %d ", buffer[i]);
+    }
+    
+    // debugf("\n");char bytes[5] = {0};
+    // char bytes[5] = {0};
+    // rng_fill(bytes, sizeof(bytes));
+    // WFI();
+    // The WFI above should continue after the PLIC
+    // receives an interrupt from the virtio device.
+    // printf("%02x %02x %02x %02x %02x\n",
+    // bytes[0], 
+    // bytes[1], 
+    // bytes[2], 
+    // bytes[3], 
+    // bytes[4]);
 #endif
 }
 
