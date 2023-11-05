@@ -1,6 +1,7 @@
 #include <compiler.h>
 #include <config.h>
 #include <csr.h>
+#include <gpu.h>
 #include <kmalloc.h>
 #include <list.h>
 #include <lock.h>
@@ -12,6 +13,9 @@
 #include <page.h>
 #include <csr.h>
 #include <trap.h>
+#include <block.h>
+#include <rng.h>
+#include <minix3.h>
 
 // Global MMU table for the kernel. This is used throughout
 // the kernel.
@@ -87,7 +91,6 @@ static void init_systems(void)
     pci_init();
 #endif
 #ifdef USE_VIRTIO
-    virtio_init();
     uint64_t stvec = trampoline_trap_start;
     
 	// # 0    - gpregs
@@ -117,9 +120,10 @@ static void init_systems(void)
     sscratch->trap_stack = (uint64_t)kmalloc(0x4000);
     CSR_WRITE("sscratch", sscratch);
 
+    virtio_init();
     uint8_t buffer[16] = {0};
     debugf("RNG State Before:");
-    for (int i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
+    for (uint64_t i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
         debugf(" %d ", buffer[i]);
     }
     debugf("\n");
@@ -127,27 +131,56 @@ static void init_systems(void)
     debugf("RNG init done; about to fill\n");
     rng_fill(buffer, 16);
     debugf("RNG State After:");
-    for (int i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
+    for (uint64_t i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
         debugf(" %d ", buffer[i]);
     }
     
     rng_fill(buffer, 16);
-    for (int i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
+    for (uint64_t i=0; i<sizeof(buffer)/sizeof(buffer[0]); i++) {
         debugf(" %d ", buffer[i]);
     }
-    
-    // debugf("\n");char bytes[5] = {0};
-    // char bytes[5] = {0};
-    // rng_fill(bytes, sizeof(bytes));
-    // WFI();
-    // The WFI above should continue after the PLIC
-    // receives an interrupt from the virtio device.
-    // printf("%02x %02x %02x %02x %02x\n",
-    // bytes[0], 
-    // bytes[1], 
-    // bytes[2], 
-    // bytes[3], 
-    // bytes[4]);
+
+
+    /*
+    uint32_t sector[256];
+    for (uint64_t i=0; i<sizeof(sector)/sizeof(sector[i]); i++) {
+        sector[i] = i;
+    }
+    block_device_write_sectors(0, sector, 2);
+    debugf("Wrote sector:\n");
+
+    for (uint64_t i=0; i<sizeof(sector)/sizeof(sector[i]); i+=8) {
+        debugf("%d %d %d %d %d %d %d %d\n",
+            sector[i], sector[i+1], sector[i+2], sector[i+3],
+            sector[i+4], sector[i+5], sector[i+6], sector[i+7]);
+    }
+    for (uint64_t i=0; i<sizeof(sector)/sizeof(sector[i]); i++) {
+        sector[i] = 0;
+    }
+
+    block_device_read_sectors(0, sector, 2);
+    debugf("Read sector:\n");
+
+    for (uint64_t i=0; i<sizeof(sector)/sizeof(sector[i]); i+=8) {
+        debugf("%d %d %d %d %d %d %d %d\n",
+            sector[i], sector[i+1], sector[i+2], sector[i+3],
+            sector[i+4], sector[i+5], sector[i+6], sector[i+7]);
+    }
+
+    uint32_t buf[64] = {0};
+    memset(buf, 0xFF, sizeof(buf));
+    block_device_write_bytes(sizeof(uint32_t) * 3, buf, sizeof(uint32_t) * 4);
+    memset(buf, 5, sizeof(buf));
+    block_device_read_bytes(0, buf, sizeof(uint32_t) * 9);
+
+    for (uint64_t i=0; i<sizeof(buf)/sizeof(buf[i]); i+=8) {
+        debugf("%d %d %d %d %d %d %d %d\n",
+            buf[i], buf[i+1], buf[i+2], buf[i+3],
+            buf[i+4], buf[i+5], buf[i+6], buf[i+7]);
+    }
+    */
+    // TEST GPU
+    debugf("GPU init %s\n", gpu_test() ? "successful" : "failed");
 #endif
 }
 
@@ -197,6 +230,7 @@ void main(unsigned int hart)
 
     // This is defined above main()
 #ifdef RUN_INTERNAL_CONSOLE
+    minix3_init();
     console();
 #else
     extern uint32_t *elfcon;

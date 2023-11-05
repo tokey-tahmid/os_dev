@@ -24,7 +24,8 @@ SYMS=cosc562.sym cosc562.dbg
 #### QEMU STUFF
 QEMU?=qemu-system-riscv64
 QEMU_DEBUG_PIPE=debug.pipe
-QEMU_HARD_DRIVE_1=hdd1.dsk
+# QEMU_HARD_DRIVE_1=hdd1.dsk
+QEMU_HARD_DRIVE_1=minix3_test1.dsk
 QEMU_HARD_DRIVE_2=hdd2.dsk
 QEMU_HARD_DRIVE_3=hdd3.dsk
 QEMU_BIOS=./sbi/sbi.elf
@@ -34,7 +35,6 @@ QEMU_CPU=rv64 #,h=true,v=true,vext_spec=v1.0
 QEMU_CPUS=4
 QEMU_MEM=128M
 QEMU_KERNEL=$(KERNEL)
-# QEMU_OPTIONS= -nographic
 # QEMU_OPTIONS+= -trace virtio*
 QEMU_OPTIONS+= -serial mon:stdio 
 QEMU_DEVICES+= -device pcie-root-port,id=bridge1,multifunction=off,chassis=0,slot=1,bus=pcie.0,addr=01.0
@@ -59,7 +59,7 @@ include $(wildcard $(DEP_DIR)/*.d)
 
 rungui: $(KERNEL) sbi
 	echo "Running WITH GUI. Use target run to run WITHOUT GUI."
-	$(QEMU) -bios $(QEMU_BIOS) -d $(QEMU_DEBUG) -cpu $(QEMU_CPU) -machine $(QEMU_MACH) -smp $(QEMU_CPUS) -m $(QEMU_MEM) -kernel $(QEMU_KERNEL) $(QEMU_OPTIONS) $(QEMU_DEVICES)
+	$(QEMU) -bios $(QEMU_BIOS) -d $(QEMU_DEBUG) -cpu $(QEMU_CPU) -machine $(QEMU_MACH) -smp $(QEMU_CPUS) -m $(QEMU_MEM) -kernel $(QEMU_KERNEL) $(QEMU_OPTIONS) -display sdl $(QEMU_DEVICES)
 
 run: $(KERNEL) sbi
 	echo "Running WITHOUT GUI. Use target rungui to run WITH GUI."

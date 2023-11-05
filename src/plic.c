@@ -3,6 +3,7 @@
 #include <pci.h>
 #include <plic.h>
 #include <printf.h>
+#include <debug.h>
 
 // PLIC is connected to 0x0c00_0000 on 'virt' machine.
 #define PLIC_BASE                0x0c000000UL
@@ -77,7 +78,6 @@ void plic_handle_irq(int hart)
             break;
     }
     plic_complete(hart, irq);
-    debugf("Handled IRQ\n");
 }
 
 void plic_init(void)
