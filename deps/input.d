@@ -1,13 +1,12 @@
 objs/input.o: src/input.c src/include/debug.h src/include/csr.h \
  src/include/config.h src/include/input.h src/include/lock.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stdbool.h \
- src/include/virtio.h \
+ src/include/input-event-codes.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stdint.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stdint-gcc.h \
- src/include/pci.h \
+ src/include/virtio.h src/include/pci.h \
  /opt/eecs/pkgs/riscv-2021.3.17/lib/gcc/riscv64-unknown-linux-gnu/10.2.0/include/stddef.h \
- util/include/vector.h src/include/input-event-codes.h \
- src/include/kmalloc.h \
+ util/include/vector.h src/include/kmalloc.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/string.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/libc-header-start.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/features.h \
@@ -58,4 +57,4 @@ objs/input.o: src/input.c src/include/debug.h src/include/csr.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/pthreadtypes-arch.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/alloca.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/bits/stdlib-float.h \
- util/include/list.h
+ util/include/list.h src/include/mmu.h
