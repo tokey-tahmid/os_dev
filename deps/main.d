@@ -9,4 +9,6 @@ objs/main.o: src/main.c util/include/compiler.h src/include/config.h \
  src/include/sbi.h src/include/symbols.h util/include/util.h \
  src/include/debug.h src/include/mmu.h src/include/page.h \
  src/include/trap.h src/include/block.h src/include/rng.h \
- src/include/vfs.h src/include/minix3.h src/include/stat.h
+ src/include/vfs.h src/include/minix3.h src/include/stat.h \
+ src/include/elf.h src/include/process.h util/include/map.h \
+ src/include/sched.h

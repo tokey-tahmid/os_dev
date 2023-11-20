@@ -8,7 +8,8 @@ objs/virtio.o: src/virtio.c src/include/debug.h \
  util/include/vector.h util/include/util.h src/include/mmu.h \
  src/include/kmalloc.h src/include/config.h src/include/csr.h \
  src/include/plic.h src/include/sbi.h util/include/compiler.h \
- src/include/sched.h src/include/process.h \
+ src/include/sched.h src/include/process.h util/include/list.h \
+ util/include/map.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/syscall.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/sys/syscall.h \
  /opt/eecs/pkgs/riscv-2021.3.17/sysroot/usr/include/asm/unistd.h \
